@@ -51,7 +51,7 @@ export default function PublicHomePage() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "24px",
+       
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
