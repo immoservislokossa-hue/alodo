@@ -161,7 +161,6 @@ export default function FinanceDashboardPage() {
 
       if (error) throw error;
 
-      // Mettre à jour l'état local
       setPosts((prevPosts) =>
         prevPosts.map((post) => ({
           ...post,
@@ -195,7 +194,6 @@ export default function FinanceDashboardPage() {
 
       if (error) throw error;
 
-      // Mettre à jour l'état local
       setPosts((prevPosts) =>
         prevPosts.map((post) => ({
           ...post,
@@ -314,9 +312,9 @@ export default function FinanceDashboardPage() {
                     <h2 style={{ fontSize: 18, fontWeight: 600, color: colors.gray800, marginBottom: 8 }}>{post.titre}</h2>
                     <div style={{ display: "flex", gap: 16, fontSize: 14, color: colors.gray600 }}>
                       <span>
-                        💰 {post.montant_min_fcfa.toLocaleString()}-{post.montant_max_fcfa.toLocaleString()} FCFA
+                        {post.montant_min_fcfa.toLocaleString()}-{post.montant_max_fcfa.toLocaleString()} FCFA
                       </span>
-                      <span>{post.type_traitement === "auto" ? "⚡ Auto" : "👤 Manuel"}</span>
+                      <span>{post.type_traitement === "auto" ? "Automatique" : "Manuel"}</span>
                       <span>
                         {post.applicants.length} candidat{post.applicants.length !== 1 ? "s" : ""}
                       </span>
@@ -352,7 +350,7 @@ export default function FinanceDashboardPage() {
                     {pendingApplicants.length > 0 && (
                       <div>
                         <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.beninYellow, marginBottom: 16 }}>
-                          ⏳ En attente ({pendingApplicants.length})
+                          En attente ({pendingApplicants.length})
                         </h3>
                         <div style={{ display: "grid", gap: 12 }}>
                           {pendingApplicants.map((applicant) => (
@@ -374,7 +372,7 @@ export default function FinanceDashboardPage() {
                     {approvedApplicants.length > 0 && (
                       <div>
                         <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.beninGreen, marginBottom: 16 }}>
-                          ✅ Approuvés ({approvedApplicants.length})
+                          Approuvés ({approvedApplicants.length})
                         </h3>
                         <div style={{ display: "grid", gap: 12 }}>
                           {approvedApplicants.map((applicant) => (
@@ -388,7 +386,7 @@ export default function FinanceDashboardPage() {
                     {rejectedApplicants.length > 0 && (
                       <div>
                         <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.beninRed, marginBottom: 16 }}>
-                          ❌ Rejetés ({rejectedApplicants.length})
+                          Rejetés ({rejectedApplicants.length})
                         </h3>
                         <div style={{ display: "grid", gap: 12 }}>
                           {rejectedApplicants.map((applicant) => (
@@ -585,7 +583,7 @@ function ApplicantCard({
     <div
       onClick={onSelect}
       style={{
-          background: colors.white,
+        background: colors.white,
         padding: 16,
         borderRadius: 12,
         border: `2px solid ${isSelected ? colors.deepBlue : colors.gray200}`,
@@ -608,8 +606,8 @@ function ApplicantCard({
           {applicant.sous_secteur && ` • ${applicant.sous_secteur}`}
         </div>
         <div style={{ fontSize: 13, display: "flex", gap: 16 }}>
-          <span>💰 {applicant.montant_demande.toLocaleString("fr-FR")} FCFA</span>
-          <span>⭐ {applicant.reputation_score.toFixed(1)}/10</span>
+          <span>Montant: {applicant.montant_demande.toLocaleString("fr-FR")} FCFA</span>
+          <span>Score: {applicant.reputation_score.toFixed(1)}/10</span>
         </div>
       </div>
 

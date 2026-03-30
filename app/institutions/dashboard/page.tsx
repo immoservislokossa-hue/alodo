@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import supabase from "@/src/lib/supabase/browser";
-import { ArrowRight, Building2, CalendarDays, CircleDollarSign, Plus, Target } from "lucide-react";
+import { ArrowRight, Building2, CalendarDays, CircleDollarSign, Plus, Target, Play, Pause, Volume2, BarChart3, AlertCircle } from "lucide-react";
 import { getDefaultUserPath } from "@/src/lib/profiles/access";
 
 const colors = {
@@ -15,6 +15,8 @@ const colors = {
   line: "#d7e4da",
   muted: "#5d7667",
   soft: "#f6faf7",
+  yellow: "#fcd116",
+  red: "#e8112d",
 };
 
 type InstitutionPost = {
@@ -28,6 +30,8 @@ type InstitutionPost = {
   montant_max_fcfa: number | null;
   date_limite: string | null;
   created_at: string;
+  audio_fr: string | null;
+  audio_yor: string | null;
 };
 
 export default function InstitutionsDashboardPage() {
@@ -35,6 +39,9 @@ export default function InstitutionsDashboardPage() {
   const [posts, setPosts] = useState<InstitutionPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const stats = useMemo(() => {
     const published = posts.filter((item) => item.statut === "publie").length;
@@ -45,6 +52,97 @@ export default function InstitutionsDashboardPage() {
       { label: "Brouillons", value: drafts, icon: CalendarDays, color: "#b78621" },
     ];
   }, [posts]);
+
+  // Fonction pour vérifier si une chaîne est une URL
+  function isUrl(str: string): boolean {
+    return str.startsWith("http://") || str.startsWith("https://") || str.startsWith("blob:");
+  }
+
+  // Fonction pour extraire l'extension du fichier depuis l'URL
+  function getFileExtension(url: string): string {
+    const match = url.match(/\.([0-9a-z]+)(?:[?#]|$)/i);
+    return match ? match[1].toLowerCase() : "mp3";
+  }
+
+  async function playPostAudio(postId: string, audioField: "audio_fr" | "audio_yor") {
+    try {
+      setAudioError(null);
+      
+      const { data: post, error } = await supabase
+        .from("post_institutions")
+        .select(audioField)
+        .eq("id", postId)
+        .single();
+
+      if (error) throw error;
+      if (!post) {
+        setAudioError("Audio non disponible pour cette opportunité");
+        return;
+      }
+
+      const audioValue = (post as any)[audioField];
+      if (!audioValue) {
+        setAudioError("Audio non disponible pour cette opportunité");
+        return;
+      }
+      
+      // Arrêter l'audio en cours
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      // Créer l'élément audio
+      const audio = new Audio();
+      
+      // Vérifier si c'est une URL ou du base64
+      if (isUrl(audioValue)) {
+        // C'est une URL Supabase Storage
+        console.log("Lecture audio depuis URL:", audioValue);
+        audio.src = audioValue;
+      } else {
+        // C'est du base64, détecter le format
+        const extension = getFileExtension(audioValue);
+        const mimeType = extension === "mp3" ? "audio/mpeg" : "audio/wav";
+        audio.src = `data:${mimeType};base64,${audioValue}`;
+        console.log("Lecture audio depuis base64, format:", mimeType);
+      }
+      
+      audioRef.current = audio;
+
+      audio.onplay = () => {
+        setPlayingAudio(`${postId}-${audioField}`);
+        console.log("Lecture audio démarrée");
+      };
+
+      audio.onended = () => {
+        console.log("Audio terminé");
+        setPlayingAudio(null);
+        audioRef.current = null;
+      };
+
+      audio.onerror = (err) => {
+        console.error("Erreur lecture audio:", err);
+        setAudioError("Impossible de lire l'audio. Vérifiez le format ou l'URL.");
+        setPlayingAudio(null);
+        audioRef.current = null;
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.error("Erreur lors de la lecture audio:", err);
+      setAudioError("Impossible de charger l'audio");
+    }
+  }
+
+  function stopAudio() {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setPlayingAudio(null);
+      setAudioError(null);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -78,7 +176,7 @@ export default function InstitutionsDashboardPage() {
         const { data, error: postsError } = await supabase
           .from("post_institutions")
           .select(
-            "id, titre, description, statut, types_concernes, secteurs_concernes, montant_min_fcfa, montant_max_fcfa, date_limite, created_at"
+            "id, titre, description, statut, types_concernes, secteurs_concernes, montant_min_fcfa, montant_max_fcfa, date_limite, created_at, audio_fr, audio_yor"
           )
           .eq("institution_profile_id", profile.id)
           .order("created_at", { ascending: false });
@@ -99,6 +197,10 @@ export default function InstitutionsDashboardPage() {
     void loadPosts();
     return () => {
       active = false;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
     };
   }, [router]);
 
@@ -118,10 +220,16 @@ export default function InstitutionsDashboardPage() {
               </div>
             </div>
 
-            <Link href="/institutions/dashboard/nouveau" style={primaryLinkStyle}>
-              <Plus size={18} />
-              Nouveau post
-            </Link>
+            <div style={{ display: "flex", gap: 12 }}>
+              <Link href="/institutions/dashboard/finance" style={financeLinkStyle}>
+                <BarChart3 size={18} />
+                Voir financement
+              </Link>
+              <Link href="/institutions/dashboard/nouveau" style={primaryLinkStyle}>
+                <Plus size={18} />
+                Nouveau post
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -191,61 +299,121 @@ export default function InstitutionsDashboardPage() {
                 Aucun post pour le moment. Cree ta premiere offre institutionnelle pour commencer le matching.
               </div>
             ) : (
-              posts.map((post) => (
-                <article
-                  key={post.id}
-                  style={{
-                    borderRadius: 20,
-                    border: `1px solid ${colors.line}`,
-                    background: colors.soft,
-                    padding: 18,
-                    display: "grid",
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div style={{ fontSize: 22, fontWeight: 800 }}>{post.titre}</div>
-                      <div style={{ color: colors.muted, lineHeight: 1.7 }}>
-                        {post.description}
+              posts.map((post) => {
+                const audioKey = `${post.id}-audio_fr`;
+                const isPlaying = playingAudio === audioKey;
+                const hasAudio = post.audio_fr || post.audio_yor;
+                
+                return (
+                  <article
+                    key={post.id}
+                    style={{
+                      borderRadius: 20,
+                      border: `1px solid ${colors.line}`,
+                      background: colors.soft,
+                      padding: 18,
+                      display: "grid",
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                      <div style={{ display: "grid", gap: 8, flex: 1 }}>
+                        <div style={{ fontSize: 22, fontWeight: 800 }}>{post.titre}</div>
+                        <div style={{ color: colors.muted, lineHeight: 1.7 }}>
+                          {post.description}
+                        </div>
+                        
+                        {/* Bouton pour écouter l'audio */}
+                        {hasAudio && (
+                          <div>
+                            <button
+                              onClick={() => isPlaying ? stopAudio() : playPostAudio(post.id, "audio_fr")}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "8px 16px",
+                                borderRadius: 20,
+                                border: `1px solid ${colors.green}`,
+                                background: isPlaying ? colors.green : "transparent",
+                                color: isPlaying ? colors.white : colors.green,
+                                cursor: "pointer",
+                                fontSize: 13,
+                                fontWeight: 600,
+                                width: "fit-content",
+                                transition: "all 0.2s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isPlaying) {
+                                  e.currentTarget.style.background = colors.green;
+                                  e.currentTarget.style.color = colors.white;
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isPlaying) {
+                                  e.currentTarget.style.background = "transparent";
+                                  e.currentTarget.style.color = colors.green;
+                                }
+                              }}
+                            >
+                              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+                              <Volume2 size={14} />
+                              {isPlaying ? "Pause" : "Écouter le résumé"}
+                            </button>
+                            
+                            {audioError && playingAudio === audioKey && (
+                              <div style={{
+                                marginTop: 8,
+                                fontSize: 12,
+                                color: colors.red,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}>
+                                <AlertCircle size={12} />
+                                {audioError}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          borderRadius: 999,
+                          padding: "8px 12px",
+                          background: post.statut === "publie" ? "#ebf7f1" : "#fff7df",
+                          color: post.statut === "publie" ? colors.green : "#9a7510",
+                          fontWeight: 800,
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {post.statut}
                       </div>
                     </div>
-                    <div
-                      style={{
-                        borderRadius: 999,
-                        padding: "8px 12px",
-                        background: post.statut === "publie" ? "#ebf7f1" : "#fff7df",
-                        color: post.statut === "publie" ? colors.green : "#9a7510",
-                        fontWeight: 800,
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {post.statut}
-                    </div>
-                  </div>
 
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                    <Chip icon={<Target size={14} />} label={post.types_concernes?.join(", ") || "Tous types"} />
-                    <Chip icon={<Building2 size={14} />} label={post.secteurs_concernes?.join(", ") || "Tous secteurs"} />
-                    <Chip
-                      icon={<CircleDollarSign size={14} />}
-                      label={
-                        post.montant_min_fcfa || post.montant_max_fcfa
-                          ? `${(post.montant_min_fcfa ?? 0).toLocaleString("fr-FR")} - ${(post.montant_max_fcfa ?? 0).toLocaleString("fr-FR")} FCFA`
-                          : "Montant non precise"
-                      }
-                    />
-                    <Chip
-                      icon={<CalendarDays size={14} />}
-                      label={
-                        post.date_limite
-                          ? `Limite ${new Date(post.date_limite).toLocaleDateString("fr-FR")}`
-                          : "Sans date limite"
-                      }
-                    />
-                  </div>
-                </article>
-              ))
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                      <Chip icon={<Target size={14} />} label={post.types_concernes?.join(", ") || "Tous types"} />
+                      <Chip icon={<Building2 size={14} />} label={post.secteurs_concernes?.join(", ") || "Tous secteurs"} />
+                      <Chip
+                        icon={<CircleDollarSign size={14} />}
+                        label={
+                          post.montant_min_fcfa || post.montant_max_fcfa
+                            ? `${(post.montant_min_fcfa ?? 0).toLocaleString("fr-FR")} - ${(post.montant_max_fcfa ?? 0).toLocaleString("fr-FR")} FCFA`
+                            : "Montant non precise"
+                        }
+                      />
+                      <Chip
+                        icon={<CalendarDays size={14} />}
+                        label={
+                          post.date_limite
+                            ? `Limite ${new Date(post.date_limite).toLocaleDateString("fr-FR")}`
+                            : "Sans date limite"
+                        }
+                      />
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>
@@ -315,6 +483,19 @@ const primaryLinkStyle = {
   borderRadius: 16,
   background: colors.green,
   color: colors.white,
+  textDecoration: "none",
+  fontWeight: 800,
+} as const;
+
+const financeLinkStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 10,
+  minHeight: 52,
+  padding: "0 18px",
+  borderRadius: 16,
+  background: colors.yellow,
+  color: colors.ink,
   textDecoration: "none",
   fontWeight: 800,
 } as const;

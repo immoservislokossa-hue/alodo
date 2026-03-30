@@ -268,7 +268,10 @@ export default function InstitutionNewPage() {
       if (playing === "fr" && audioRefFr.current) audioRefFr.current.pause();
       if (playing === "yor" && audioRefYor.current) audioRefYor.current.pause();
 
-      ref.current.play();
+      ref.current.play().catch((err) => {
+        console.error("Erreur lecture audio:", err);
+        setAudioError("Impossible de lire l'audio");
+      });
       setPlaying(language);
     }
   }
@@ -609,7 +612,7 @@ export default function InstitutionNewPage() {
                         <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 13 }}>Audio Français</div>
                         <audio
                           ref={audioRefFr}
-                          src={`data:audio/mp3;base64,${audios.fr}`}
+                          src={`data:audio/wav;base64,${audios.fr}`}
                           onEnded={() => setPlaying(null)}
                           style={{ display: "none" }}
                         />
@@ -638,7 +641,7 @@ export default function InstitutionNewPage() {
                         <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 13 }}>Audio Yoruba</div>
                         <audio
                           ref={audioRefYor}
-                          src={`data:audio/mp3;base64,${audios.yor}`}
+                          src={`data:audio/wav;base64,${audios.yor}`}
                           onEnded={() => setPlaying(null)}
                           style={{ display: "none" }}
                         />
