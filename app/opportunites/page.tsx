@@ -212,6 +212,67 @@ const responsiveStyles = {
   },
 };
 
+// Composant Skeleton pour le chargement
+function SkeletonLoader() {
+  return (
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px", paddingTop: 24 }}>
+      {/* Header skeleton */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ width: "280px", height: "36px", background: colors.gray200, borderRadius: 8, marginBottom: 8 }} />
+        <div style={{ width: "200px", height: "20px", background: colors.gray200, borderRadius: 4 }} />
+      </div>
+
+      {/* Stats skeleton */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} style={{ background: colors.white, borderRadius: 16, padding: 16, border: `1px solid ${colors.gray200}` }}>
+            <div style={{ width: "40px", height: "28px", background: colors.gray200, borderRadius: 4, marginBottom: 8 }} />
+            <div style={{ width: "80px", height: "14px", background: colors.gray200, borderRadius: 4 }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Section header skeleton */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+        <div style={{ width: 4, height: 24, background: colors.gray300, borderRadius: 2 }} />
+        <div style={{ width: "150px", height: "24px", background: colors.gray200, borderRadius: 4 }} />
+      </div>
+
+      {/* Cards skeleton */}
+      {[1, 2, 3].map((i) => (
+        <div key={i} style={{ background: colors.white, borderRadius: 20, padding: 20, marginBottom: 16, border: `1px solid ${colors.gray200}` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ width: "200px", height: "20px", background: colors.gray200, borderRadius: 4, marginBottom: 12 }} />
+              <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+                <div style={{ width: "120px", height: "16px", background: colors.gray200, borderRadius: 4 }} />
+                <div style={{ width: "100px", height: "16px", background: colors.gray200, borderRadius: 4 }} />
+              </div>
+              <div style={{ width: "100px", height: "32px", background: colors.gray200, borderRadius: 20 }} />
+            </div>
+            <div style={{ minWidth: 140, textAlign: "right" }}>
+              <div style={{ width: "100px", height: "28px", background: colors.gray200, borderRadius: 20, margin: "0 auto 12px" }} />
+              <div style={{ width: "100%", height: "40px", background: colors.gray200, borderRadius: 12, marginBottom: 8 }} />
+              <div style={{ width: "100%", height: "40px", background: colors.gray200, borderRadius: 12 }} />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Animation de pulsation */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .skeleton-pulse {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function OpportunitesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -221,12 +282,15 @@ export default function OpportunitesPage() {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isMounted = useRef(true);
 
   function isUrl(str: string): boolean {
     return str.startsWith("http://") || str.startsWith("https://") || str.startsWith("blob:");
   }
 
   async function playSummaryAudio(postId: string, audioField: "audio_fr" | "audio_yor") {
+    if (!isMounted.current) return;
+    
     try {
       setAudioError(null);
       
@@ -237,12 +301,16 @@ export default function OpportunitesPage() {
         .single();
 
       if (error) throw error;
-      if (!post || !post[audioField]) {
+      if (!post) {
         setAudioError("Audio non disponible");
         return;
       }
 
-      const audioValue = post[audioField];
+      const audioValue = (post as any)[audioField];
+      if (!audioValue) {
+        setAudioError("Audio non disponible");
+        return;
+      }
       
       if (audioRef.current) {
         audioRef.current.pause();
@@ -259,20 +327,26 @@ export default function OpportunitesPage() {
       
       audioRef.current = audio;
 
-      audio.onplay = () => setPlayingAudio(`${postId}-${audioField}`);
+      audio.onplay = () => {
+        if (isMounted.current) setPlayingAudio(`${postId}-${audioField}`);
+      };
       audio.onended = () => {
-        setPlayingAudio(null);
-        audioRef.current = null;
+        if (isMounted.current) {
+          setPlayingAudio(null);
+          audioRef.current = null;
+        }
       };
       audio.onerror = () => {
-        setAudioError("Impossible de lire l'audio");
-        setPlayingAudio(null);
-        audioRef.current = null;
+        if (isMounted.current) {
+          setAudioError("Impossible de lire l'audio");
+          setPlayingAudio(null);
+          audioRef.current = null;
+        }
       };
 
       await audio.play();
     } catch (err) {
-      setAudioError("Impossible de charger l'audio");
+      if (isMounted.current) setAudioError("Impossible de charger l'audio");
     }
   }
 
@@ -286,10 +360,20 @@ export default function OpportunitesPage() {
   }
 
   useEffect(() => {
-    let active = true;
+    isMounted.current = true;
+    
+    let timeoutId: NodeJS.Timeout;
 
     async function initAuthAndLoad() {
       try {
+        // Timeout de sécurité pour éviter le chargement infini
+        timeoutId = setTimeout(() => {
+          if (isMounted.current && loading) {
+            setError("Le chargement prend trop de temps. Vérifiez votre connexion.");
+            setLoading(false);
+          }
+        }, 8000);
+
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user ?? null;
 
@@ -300,9 +384,12 @@ export default function OpportunitesPage() {
 
         await loadMatchesForUser(user.id);
       } catch (err: any) {
-        if (active) setError(err?.message ?? "Erreur lors du chargement");
+        if (isMounted.current) setError(err?.message ?? "Erreur lors du chargement");
       } finally {
-        if (active) setLoading(false);
+        if (isMounted.current) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
       }
     }
 
@@ -319,7 +406,7 @@ export default function OpportunitesPage() {
         return;
       }
 
-      if (profileRow.langue) setUserLangue(profileRow.langue);
+      if (profileRow.langue && isMounted.current) setUserLangue(profileRow.langue);
       const profileId = profileRow.id;
 
       const { data: matches, error: matchesErr } = await supabase
@@ -330,7 +417,7 @@ export default function OpportunitesPage() {
 
       if (matchesErr) throw matchesErr;
       if (!matches || matches.length === 0) {
-        setItems([]);
+        if (isMounted.current) setItems([]);
         return;
       }
 
@@ -349,13 +436,14 @@ export default function OpportunitesPage() {
         post: postsById.get(m.post_institution_id) ?? null,
       }));
 
-      if (active) setItems(combined);
+      if (isMounted.current) setItems(combined);
     }
 
     initAuthAndLoad();
 
     return () => {
-      active = false;
+      isMounted.current = false;
+      clearTimeout(timeoutId);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -368,11 +456,16 @@ export default function OpportunitesPage() {
   const canApply = items.filter((i) => i.match?.can_apply === true);
   const cannotApply = items.filter((i) => i.match?.can_apply === false);
 
+  // Afficher le skeleton pendant le chargement
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: colors.gray50 }}>
-        <Loader2 size={40} color={colors.deepBlue} style={{ animation: "spin 1s linear infinite" }} />
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div style={{ minHeight: "100vh", background: colors.gray50 }}>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "4px", display: "flex", zIndex: 50 }}>
+          <div style={{ flex: 1, background: colors.beninGreen }} />
+          <div style={{ flex: 1, background: colors.beninYellow }} />
+          <div style={{ flex: 1, background: colors.beninRed }} />
+        </div>
+        <SkeletonLoader />
       </div>
     );
   }
@@ -404,7 +497,7 @@ export default function OpportunitesPage() {
     return (
       <div
         key={match.id}
-        style={responsiveStyles.card}
+        style={responsiveStyles.card as any}
         onMouseEnter={(e) => {
           e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
           e.currentTarget.style.transform = "translateY(-2px)";
@@ -414,16 +507,15 @@ export default function OpportunitesPage() {
           e.currentTarget.style.transform = "translateY(0)";
         }}
       >
-        <div style={responsiveStyles.cardContent}>
-          <div style={responsiveStyles.leftSection}>
-            {/* Titre */}
+        <div style={responsiveStyles.cardContent as any}>
+          <div style={responsiveStyles.leftSection as any}>
             <div style={{ marginBottom: 12 }}>
-              <h3 style={responsiveStyles.titleCard}>{post?.titre ?? "Titre manquant"}</h3>
-              <div style={responsiveStyles.metaInfo}>
-                {post?.montant_min && post?.montant_max && (
-                  <div style={responsiveStyles.metaItem}>
+              <h3 style={responsiveStyles.titleCard as any}>{post?.titre ?? "Titre manquant"}</h3>
+              <div style={responsiveStyles.metaInfo as any}>
+                {post?.montant_min_fcfa && post?.montant_max_fcfa && (
+                  <div style={responsiveStyles.metaItem as any}>
                     <DollarSign size={12} color={colors.gray400} />
-                    <span>{post.montant_min.toLocaleString()} - {post.montant_max.toLocaleString()} FCFA</span>
+                    <span>{post.montant_min_fcfa.toLocaleString()} - {post.montant_max_fcfa.toLocaleString()} FCFA</span>
                   </div>
                 )}
                 {post?.date_limite && (
@@ -435,7 +527,6 @@ export default function OpportunitesPage() {
               </div>
             </div>
             
-            {/* Audio */}
             {hasAudio && (
               <div style={{ marginBottom: 12 }}>
                 <button
@@ -457,7 +548,6 @@ export default function OpportunitesPage() {
               </div>
             )}
             
-            {/* Pertinence */}
             <div style={{
               ...responsiveStyles.badge,
               background: match.niveau === "tres_pertinent" ? `${colors.beninGreen}10` : `${colors.deepBlue}10`,
@@ -469,9 +559,7 @@ export default function OpportunitesPage() {
             </div>
           </div>
           
-          {/* Boutons côté droit */}
-          <div style={responsiveStyles.rightSection}>
-            {/* Badge Postulable / Non postulable */}
+          <div style={responsiveStyles.rightSection as any}>
             <div style={{
               ...responsiveStyles.badge,
               background: isPostulable ? `${colors.beninGreen}10` : `${colors.beninYellow}10`,
@@ -482,7 +570,6 @@ export default function OpportunitesPage() {
               </span>
             </div>
             
-            {/* Bouton Voir plus */}
             <button
               onClick={() => router.push(`/opportunites/${post?.id}`)}
               style={{
@@ -504,7 +591,6 @@ export default function OpportunitesPage() {
               <ArrowRight size={14} />
             </button>
             
-            {/* Bouton Postuler - visible seulement si postulable */}
             {isPostulable && (
               <button
                 onClick={() => router.push(`/opportunites/${post?.id}/postuler`)}
@@ -528,20 +614,20 @@ export default function OpportunitesPage() {
   }
 
   return (
-    <div style={responsiveStyles.container}>
+    <div style={responsiveStyles.container as any}>
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "4px", display: "flex", zIndex: 50 }}>
         <div style={{ flex: 1, background: colors.beninGreen }} />
         <div style={{ flex: 1, background: colors.beninYellow }} />
         <div style={{ flex: 1, background: colors.beninRed }} />
       </div>
 
-      <div style={responsiveStyles.content}>
-        <div style={responsiveStyles.header}>
-          <h1 style={responsiveStyles.title}>Opportunités de financement</h1>
-          <p style={responsiveStyles.subtitle}>Découvrez les offres adaptées à votre profil</p>
+      <div style={responsiveStyles.content as any}>
+        <div style={responsiveStyles.header as any}>
+          <h1 style={responsiveStyles.title as any}>Opportunités de financement</h1>
+          <p style={responsiveStyles.subtitle as any}>Découvrez les offres adaptées à votre profil</p>
         </div>
 
-        <div style={responsiveStyles.statsGrid}>
+        <div style={responsiveStyles.statsGrid as any}>
           <div style={responsiveStyles.statCard}>
             <div style={{ ...responsiveStyles.statValue, color: colors.beninGreen }}>{very.length}</div>
             <div style={responsiveStyles.statLabel}>Très pertinentes</div>
