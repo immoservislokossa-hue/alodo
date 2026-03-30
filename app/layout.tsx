@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import LogoutHeader from "@/components/LogoutHeader";
+import Navbar from "@/components/Navbar";
  
 export const metadata: Metadata = {
   title: "Alɔdó",
@@ -15,11 +16,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <LogoutHeader />
         
-          <div style={{ paddingTop: 64 }}>
+          <div style={{ paddingTop: 64, paddingBottom: 100 }}>
      
             {children}
           </div>
         
+        <Navbar />
       </body>
     </html>
   );
