@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import supabase from "@/src/lib/supabase/browser";
-import { TrendingUp, Wallet, Store, Wrench, CreditCard, User, Settings, LogOut, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, Wallet, Store, Wrench, User, LogOut, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 
 const colors = {
   white: "#FFFFFF", deepBlue: "#1a3c6b", beninGreen: "#008751", beninYellow: "#FCD116", beninRed: "#E8112D",
@@ -19,9 +19,7 @@ const baseNavItems: NavItem[] = [
   { href: "/marche", icon: Store, label: "Marché", color: colors.deepBlue, forVendeur: true },
   { href: "/prestations", icon: Wrench, label: "Prestations", color: colors.deepBlue, forPrestataire: true },
   { href: "/wallet", icon: Wallet, label: "Portefeuille", color: colors.beninYellow, forBoth: true },
-  { href: "/transactions", icon: CreditCard, label: "Transactions", color: colors.gray500, forBoth: true },
   { href: "/profil", icon: User, label: "Profil", color: colors.gray600, forBoth: true },
-  { href: "/parametres", icon: Settings, label: "Paramètres", color: colors.gray400, forBoth: true },
 ];
 
 export default function Navbar() {
@@ -64,45 +62,30 @@ export default function Navbar() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
 
-  if (loading) {
-    if (isMobile) return (
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 65, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", borderTop: `1px solid ${colors.gray200}`, display: "flex", justifyContent: "space-around", alignItems: "center", zIndex: 40 }}>
-        {[1,2,3,4,5].map(i => <div key={i} style={{ width: 44, height: 44, background: colors.gray200, borderRadius: 12 }} />)}
-      </div>
-    );
-    return (
-      <div style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 72, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(20px)", borderRight: `1px solid ${colors.gray200}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "24px 0", zIndex: 50 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>{[1,2,3,4,5].map(i => <div key={i} style={{ width: 44, height: 44, background: colors.gray200, borderRadius: 12 }} />)}</div>
-        <div style={{ width: 44, height: 44, background: colors.gray200, borderRadius: 12 }} />
-      </div>
-    );
-  }
+  if (loading) return null;
 
   if (isMobile) {
-    const mobileItems = filteredNavItems.slice(0, 5);
+    const mobileItems = filteredNavItems.slice(0, 4);
     return (
-      <>
-        <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 65, background: scrolled ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderTop: `1px solid ${colors.gray200}`, display: "flex", justifyContent: "space-around", alignItems: "center", zIndex: 40, transition: "all 0.3s ease", boxShadow: scrolled ? "0 -4px 20px rgba(0,0,0,0.08)" : "0 -2px 10px rgba(0,0,0,0.05)" }}>
-          {mobileItems.map(item => {
-            const Icon = item.icon; const active = isActive(item.href);
-            return (
-              <button key={item.href} onClick={() => router.push(item.href)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", padding: "6px 10px", borderRadius: 12, position: "relative" }}>
-                {active && <div style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", width: 4, height: 4, background: item.color, borderRadius: "50%" }} />}
-                <Icon size={22} color={active ? item.color : colors.gray400} strokeWidth={active ? 2 : 1.5} />
-                <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? item.color : colors.gray500 }}>{item.label.length > 8 ? item.label.slice(0,6)+".." : item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-        <div style={{ height: 65, marginBottom: 16 }} />
-      </>
+      <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 65, background: scrolled ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderTop: `1px solid ${colors.gray200}`, display: "flex", justifyContent: "space-around", alignItems: "center", zIndex: 40 }}>
+        {mobileItems.map(item => {
+          const Icon = item.icon; const active = isActive(item.href);
+          return (
+            <button key={item.href} onClick={() => router.push(item.href)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "transparent", border: "none", cursor: "pointer", padding: "6px 10px", borderRadius: 12, position: "relative" }}>
+              {active && <div style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)", width: 4, height: 4, background: item.color, borderRadius: "50%" }} />}
+              <Icon size={22} color={active ? item.color : colors.gray400} strokeWidth={active ? 2 : 1.5} />
+              <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? item.color : colors.gray500 }}>{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     );
   }
 
   const sidebarWidth = isCollapsed ? "72px" : "260px";
   return (
     <>
-      <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: sidebarWidth, background: scrolled ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderRight: `1px solid ${colors.gray200}`, display: "flex", flexDirection: "column", justifyContent: "space-between", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex: 50, boxShadow: "2px 0 20px rgba(0,0,0,0.03)" }}>
+      <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: sidebarWidth, background: scrolled ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderRight: `1px solid ${colors.gray200}`, display: "flex", flexDirection: "column", justifyContent: "space-between", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex: 50 }}>
         <div style={{ padding: isCollapsed ? "20px 0" : "24px 20px", borderBottom: `1px solid ${colors.gray100}` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "space-between" }}>
             {!isCollapsed && (
@@ -134,11 +117,6 @@ export default function Navbar() {
           })}
         </div>
         <div style={{ padding: isCollapsed ? "16px 0" : "20px 12px", borderTop: `1px solid ${colors.gray100}` }}>
-          <button onClick={() => router.push("/profil")} style={{ display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "flex-start", gap: isCollapsed ? 0 : 14, width: "100%", padding: isCollapsed ? "12px 0" : "12px 16px", borderRadius: 12, background: "transparent", border: "none", cursor: "pointer", marginBottom: 8 }}
-            onMouseEnter={e => e.currentTarget.style.background = colors.gray100} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}><User size={20} color={colors.gray500} /></div>
-            {!isCollapsed && <span style={{ fontSize: 14, color: colors.gray600 }}>Mon Profil</span>}
-          </button>
           <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "flex-start", gap: isCollapsed ? 0 : 14, width: "100%", padding: isCollapsed ? "12px 0" : "12px 16px", borderRadius: 12, background: "transparent", border: "none", cursor: "pointer" }}
             onMouseEnter={e => e.currentTarget.style.background = `${colors.beninRed}10`} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
             <div style={{ width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}><LogOut size={20} color={colors.beninRed} /></div>
@@ -146,7 +124,7 @@ export default function Navbar() {
           </button>
         </div>
       </aside>
-      <div style={{ marginLeft: sidebarWidth, transition: "margin-left 0.3s cubic-bezier(0.4,0,0.2,1)", minHeight: "100vh" }} />
+      <div style={{ marginLeft: sidebarWidth }} />
     </>
   );
 }

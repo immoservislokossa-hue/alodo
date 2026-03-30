@@ -14,12 +14,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body>
+    <html lang="fr" style={{ margin: 0, padding: 0 }}>
+      <body style={{ margin: 0, padding: 0 }}>
         <Navbar />
-        <main style={{ minHeight: "100vh" }}>
-          {children}
-        </main>
+        {children}
       </body>
     </html>
   );
