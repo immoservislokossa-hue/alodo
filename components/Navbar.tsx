@@ -29,10 +29,6 @@ export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null); const [loading, setLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false); const [scrolled, setScrolled] = useState(false); const [isMobile, setIsMobile] = useState(false);
 
-  // Cacher la navbar sur la page langue
-  const isLanguePage = pathname === "/langue";
-  if (isLanguePage) return null;
-
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
