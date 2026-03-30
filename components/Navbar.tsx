@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import supabase from "@/src/lib/supabase/browser";
-import { TrendingUp, Wallet, Store, Wrench, User, LogOut, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, Store, Wrench, User, LogOut, Layers, ChevronLeft, ChevronRight, Bot } from "lucide-react";
 
 const colors = {
   white: "#FFFFFF", deepBlue: "#1a3c6b", beninGreen: "#008751", beninYellow: "#FCD116", beninRed: "#E8112D",
@@ -12,14 +12,14 @@ const colors = {
 };
 
 type Profile = { id: string; type: "vendeur" | "prestataire"; user_id: string };
-type NavItem = { href: string; icon: React.ElementType; label: string; color: string; forVendeur?: boolean; forPrestataire?: boolean; forBoth?: boolean };
+type NavItem = { href: string; icon: React.ElementType; label: string; color: string; forVendeur?: boolean; forPrestataire?: boolean };
 
 const baseNavItems: NavItem[] = [
-  { href: "/opportunites", icon: TrendingUp, label: "Opportunités", color: colors.beninGreen, forBoth: true },
+  { href: "/opportunites", icon: TrendingUp, label: "Opportunités", color: colors.beninGreen },
   { href: "/marche", icon: Store, label: "Marché", color: colors.deepBlue, forVendeur: true },
   { href: "/prestations", icon: Wrench, label: "Prestations", color: colors.deepBlue, forPrestataire: true },
-  { href: "/wallet", icon: Wallet, label: "Portefeuille", color: colors.beninYellow, forBoth: true },
-  { href: "/profil", icon: User, label: "Profil", color: colors.gray600, forBoth: true },
+  { href: "/formalisation", icon: Bot, label: "Assistant", color: colors.beninYellow },
+  { href: "/profil", icon: User, label: "Profil", color: colors.gray600 },
 ];
 
 export default function Navbar() {
@@ -52,10 +52,11 @@ export default function Navbar() {
   }, []);
 
   const filteredNavItems = baseNavItems.filter(item => {
-    if (!profile) return item.forBoth;
-    if (item.forBoth) return true;
-    if (profile?.type === "vendeur" && item.forVendeur) return true;
-    if (profile?.type === "prestataire" && item.forPrestataire) return true;
+    if (item.href === "/opportunites") return true;
+    if (item.href === "/formalisation") return true;
+    if (item.href === "/profil") return true;
+    if (profile?.type === "vendeur" && item.href === "/marche") return true;
+    if (profile?.type === "prestataire" && item.href === "/prestations") return true;
     return false;
   });
 
