@@ -11,7 +11,7 @@ export default function Navbar() {
     { href: "/", icon: Home, label: "Accueil", color: "#008751" },
     { href: "/vendeur", icon: ShoppingBag, label: "Vendre", color: "#1a3c6b" },
     { href: "/opportunites", icon: Briefcase, label: "Opportunités", color: "#FCD116" },
-    { href: "/wallet", icon: Wallet, label: "Wallet", color: "#E8112D" },
+  
     { href: "/simple/boitier", icon: Calculator, label: "Boîtier", color: "#6B7280" },
   ]
 

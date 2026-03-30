@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import supabase from "@/src/lib/supabase/browser";
 import {
@@ -268,6 +268,76 @@ const styles = {
   },
 };
 
+// Composant Skeleton pour le chargement
+function SkeletonLoader() {
+  return (
+    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px", paddingTop: 24 }}>
+      {/* Back button skeleton */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, padding: "8px 0" }}>
+        <div style={{ width: 20, height: 20, background: colors.gray200, borderRadius: 4 }} />
+        <div style={{ width: 60, height: 16, background: colors.gray200, borderRadius: 4 }} />
+      </div>
+
+      {/* Header skeleton */}
+      <div style={{ background: colors.white, borderRadius: 20, padding: 20, marginBottom: 20, border: `1px solid ${colors.gray200}` }}>
+        <div style={{ width: "120px", height: "28px", background: colors.gray200, borderRadius: 6, marginBottom: 12 }} />
+        <div style={{ width: "80%", height: "20px", background: colors.gray200, borderRadius: 4 }} />
+      </div>
+
+      {/* Grid skeleton */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
+        {/* Form skeleton */}
+        <div style={{ background: colors.white, borderRadius: 20, padding: 20, border: `1px solid ${colors.gray200}` }}>
+          <div style={{ width: "140px", height: "24px", background: colors.gray200, borderRadius: 4, marginBottom: 20 }} />
+          
+          {/* Montant field skeleton */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ width: "160px", height: "16px", background: colors.gray200, borderRadius: 4, marginBottom: 8 }} />
+            <div style={{ height: "48px", background: colors.gray200, borderRadius: 12 }} />
+          </div>
+          
+          {/* Message field skeleton */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ width: "180px", height: "16px", background: colors.gray200, borderRadius: 4, marginBottom: 8 }} />
+            <div style={{ height: "120px", background: colors.gray200, borderRadius: 12 }} />
+          </div>
+          
+          {/* Submit button skeleton */}
+          <div style={{ height: "52px", background: colors.gray200, borderRadius: 12 }} />
+        </div>
+
+        {/* Sidebar skeleton */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ background: colors.white, borderRadius: 20, padding: 20, border: `1px solid ${colors.gray200}` }}>
+            <div style={{ width: "100px", height: "18px", background: colors.gray200, borderRadius: 4, marginBottom: 16 }} />
+            <div style={{ padding: 12, background: colors.gray50, borderRadius: 12, marginBottom: 16 }}>
+              <div style={{ width: "120px", height: "14px", background: colors.gray200, borderRadius: 4, marginBottom: 8 }} />
+              <div style={{ width: "60px", height: "28px", background: colors.gray200, borderRadius: 4 }} />
+            </div>
+            <div style={{ padding: 12, background: colors.gray200, borderRadius: 12, height: "70px" }} />
+          </div>
+          
+          <div style={{ background: colors.white, borderRadius: 20, padding: 20, border: `1px solid ${colors.gray200}` }}>
+            <div style={{ width: "130px", height: "18px", background: colors.gray200, borderRadius: 4, marginBottom: 12 }} />
+            <div style={{ height: "80px", background: colors.gray200, borderRadius: 12 }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Animation de pulsation */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .skeleton-pulse {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // Mapping des documents requis pour affichage convivial
 const documentLabels: Record<string, string> = {
   cip: "Carte d'identité nationale",
@@ -301,14 +371,24 @@ export default function PostulerPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<FinancingResult | null>(null);
   const [missingDocuments, setMissingDocuments] = useState<string[]>([]);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    let active = true;
+    isMounted.current = true;
+    let timeoutId: NodeJS.Timeout;
 
     async function loadData() {
       if (!postId) return;
 
       try {
+        // Timeout de sécurité
+        timeoutId = setTimeout(() => {
+          if (isMounted.current && loading) {
+            setError("Le chargement prend trop de temps. Vérifiez votre connexion.");
+            setLoading(false);
+          }
+        }, 8000);
+
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user;
 
@@ -329,7 +409,7 @@ export default function PostulerPage() {
           return;
         }
 
-        if (!active) return;
+        if (!isMounted.current) return;
         setProfile(profileData);
 
         const { data: postData, error: postErr } = await supabase
@@ -344,7 +424,7 @@ export default function PostulerPage() {
           return;
         }
 
-        if (!active) return;
+        if (!isMounted.current) return;
         setPost(postData);
 
         // Vérifier les documents manquants
@@ -355,18 +435,22 @@ export default function PostulerPage() {
         setMissingDocuments(missing);
 
       } catch (err: any) {
-        if (active) {
+        if (isMounted.current) {
           console.error("Erreur:", err);
           setError(err?.message ?? "Erreur lors du chargement");
         }
       } finally {
-        if (active) setLoading(false);
+        if (isMounted.current) {
+          clearTimeout(timeoutId);
+          setLoading(false);
+        }
       }
     }
 
     loadData();
     return () => {
-      active = false;
+      isMounted.current = false;
+      clearTimeout(timeoutId);
     };
   }, [postId, router]);
 
@@ -436,13 +520,16 @@ export default function PostulerPage() {
     }
   }
 
+  // Afficher le skeleton pendant le chargement
   if (loading) {
     return (
       <div style={styles.container}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-          <Loader2 size={40} color={colors.deepBlue} style={{ animation: "spin 1s linear infinite" }} />
-          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "4px", display: "flex", zIndex: 50 }}>
+          <div style={{ flex: 1, background: colors.beninGreen }} />
+          <div style={{ flex: 1, background: colors.beninYellow }} />
+          <div style={{ flex: 1, background: colors.beninRed }} />
         </div>
+        <SkeletonLoader />
       </div>
     );
   }
