@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body>
         <Navbar />
-        <main style={{ minHeight: "100vh" }}>
+        <main >
           {children}
         </main>
       </body>
