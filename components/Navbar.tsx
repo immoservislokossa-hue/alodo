@@ -43,7 +43,7 @@ export default function Navbar() {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user;
-        if (!user) { router.replace("/institutions/login"); return; }
+        if (!user) { if (active) setLoading(false); return; }
         const { data: profileData, error: profileErr } = await supabase.from("profiles").select("id, type, user_id").eq("user_id", user.id).maybeSingle();
         if (profileErr) throw profileErr;
         if (active && profileData) setProfile(profileData);
@@ -51,7 +51,7 @@ export default function Navbar() {
     }
     loadProfile();
     return () => { active = false; };
-  }, [router]);
+  }, []);
 
   const filteredNavItems = baseNavItems.filter(item => {
     if (item.forBoth) return true;
@@ -61,7 +61,7 @@ export default function Navbar() {
   });
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  const handleLogout = async () => { await supabase.auth.signOut(); router.push("/institutions/login"); };
+  const handleLogout = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
 
   if (loading) {
     if (isMobile) return (
@@ -77,7 +77,8 @@ export default function Navbar() {
     );
   }
 
-  // MOBILE BOTTOM BAR
+  if (!profile) return null;
+
   if (isMobile) {
     const mobileItems = filteredNavItems.slice(0, 5);
     return (
@@ -99,12 +100,10 @@ export default function Navbar() {
     );
   }
 
-  // DESKTOP SIDEBAR
   const sidebarWidth = isCollapsed ? "72px" : "260px";
   return (
     <>
       <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: sidebarWidth, background: scrolled ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderRight: `1px solid ${colors.gray200}`, display: "flex", flexDirection: "column", justifyContent: "space-between", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)", zIndex: 50, boxShadow: "2px 0 20px rgba(0,0,0,0.03)" }}>
-        {/* Logo */}
         <div style={{ padding: isCollapsed ? "20px 0" : "24px 20px", borderBottom: `1px solid ${colors.gray100}` }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "space-between" }}>
             {!isCollapsed && (
@@ -121,7 +120,6 @@ export default function Navbar() {
             </button>
           </div>
         </div>
-        {/* Navigation */}
         <div style={{ flex: 1, padding: isCollapsed ? "20px 0" : "20px 12px", display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
           {filteredNavItems.map(item => {
             const Icon = item.icon; const active = isActive(item.href);
@@ -136,7 +134,6 @@ export default function Navbar() {
             );
           })}
         </div>
-        {/* Footer */}
         <div style={{ padding: isCollapsed ? "16px 0" : "20px 12px", borderTop: `1px solid ${colors.gray100}` }}>
           <button onClick={() => router.push("/profil")} style={{ display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "flex-start", gap: isCollapsed ? 0 : 14, width: "100%", padding: isCollapsed ? "12px 0" : "12px 16px", borderRadius: 12, background: "transparent", border: "none", cursor: "pointer", marginBottom: 8 }}
             onMouseEnter={e => e.currentTarget.style.background = colors.gray100} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
