@@ -55,37 +55,47 @@ Generate ONLY the 3 paragraphs of the summary in Yoruba, without introduction or
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const generateSummary = async (prompt: string): Promise<string> => {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              maxOutputTokens: 500,
+              temperature: 0.7,
             },
-          ],
-          generationConfig: {
-            maxOutputTokens: 500,
-            temperature: 0.7,
-          },
-        }),
-      });
+          }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(
-          `Gemini API error: ${error.error?.message || response.statusText}`
-        );
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errorMsg =
+            data.error?.message ||
+            data.message ||
+            `Gemini API error: ${response.status} ${response.statusText}`;
+          throw new Error(errorMsg);
+        }
+
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!text) {
+          throw new Error(
+            "No text generated from Gemini. Check your API key and quota."
+          );
+        }
+
+        return text.trim();
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Unknown error in generateSummary";
+        throw new Error(`Summary generation failed: ${message}`);
       }
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!text) {
-        throw new Error("No text generated from Gemini");
-      }
-
-      return text.trim();
     };
 
     // Generate both summaries in parallel
