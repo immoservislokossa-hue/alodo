@@ -54,6 +54,7 @@ export default function Navbar() {
   }, []);
 
   const filteredNavItems = baseNavItems.filter(item => {
+    if (!profile) return item.forBoth;
     if (item.forBoth) return true;
     if (profile?.type === "vendeur" && item.forVendeur) return true;
     if (profile?.type === "prestataire" && item.forPrestataire) return true;
@@ -76,8 +77,6 @@ export default function Navbar() {
       </div>
     );
   }
-
-  if (!profile) return null;
 
   if (isMobile) {
     const mobileItems = filteredNavItems.slice(0, 5);

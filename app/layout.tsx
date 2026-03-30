@@ -16,14 +16,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr">
       <body>
-       
-        
-          <div style={{ paddingTop: 64, paddingBottom: 100 }}>
-     
-            {children}
-          </div>
-        
         <Navbar />
+        <main style={{ minHeight: "100vh" }}>
+          {children}
+        </main>
       </body>
     </html>
   );
