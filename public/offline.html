@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1a3c6b" />
+    <title>Alɔdó - Mode hors-ligne</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+          "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+        background: linear-gradient(135deg, #1a3c6b 0%, #0e2a4a 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        padding: 24px;
+      }
+
+      .container {
+        text-align: center;
+        max-width: 500px;
+      }
+
+      .icon-offline {
+        font-size: 80px;
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        font-size: 32px;
+        margin-bottom: 12px;
+        font-weight: 800;
+      }
+
+      .subtitle {
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 32px;
+        line-height: 1.6;
+      }
+
+      .features {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 32px;
+        backdrop-filter: blur(10px);
+      }
+
+      .feature {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+
+      .feature:last-child {
+        margin-bottom: 0;
+      }
+
+      .feature-icon {
+        font-size: 20px;
+      }
+
+      .status-badge {
+        display: inline-block;
+        background: rgba(232, 17, 45, 0.2);
+        border: 1px solid #E8112D;
+        color: #ffc0cb;
+        padding: 8px 16px;
+        border-radius: 24px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 24px;
+      }
+
+      .button {
+        display: inline-block;
+        background: #008751;
+        color: white;
+        padding: 12px 32px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 200ms ease;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+      }
+
+      .button:hover {
+        background: #006b41;
+        transform: translateY(-2px);
+      }
+
+      .waiting-message {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 24px;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      .pulse {
+        animation: pulse 2s ease-in-out infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon-offline">📡</div>
+
+      <div class="status-badge">
+        <span class="pulse">●</span> Mode hors-ligne
+      </div>
+
+      <h1>Connexion perdue</h1>
+
+      <p class="subtitle">
+        Vous êtes actuellement hors-ligne. Connectez-vous à Internet pour continuer à utiliser
+        Alɔdó.
+      </p>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Vérifiez votre connexion Wi-Fi ou données mobiles</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Actualisez la page une fois connecté</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">✓</span>
+          <span>Vos données en cache seront disponibles</span>
+        </div>
+      </div>
+
+      <button class="button" onclick="location.reload()">Réessayer</button>
+
+      <p class="waiting-message">Dès que vous êtes connecté, cliquez sur "Réessayer"</p>
+    </div>
+  </body>
+</html>

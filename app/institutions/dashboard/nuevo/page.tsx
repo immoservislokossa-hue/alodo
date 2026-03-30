@@ -700,6 +700,7 @@ export default function InstitutionNewPage() {
                 values={form.secteurs_concernes}
                 color={colors.blue}
                 onToggle={(value) => update("secteurs_concernes", toggleArrayValue(form.secteurs_concernes, value))}
+                onSelectAll={(values) => update("secteurs_concernes", values)}
               />
 
               <ChoiceSection
@@ -710,6 +711,7 @@ export default function InstitutionNewPage() {
                 onToggle={(value) =>
                   update("sous_secteurs_concernes", toggleArrayValue(form.sous_secteurs_concernes, value))
                 }
+                onSelectAll={(values) => update("sous_secteurs_concernes", values)}
               />
 
               <ChoiceSection
@@ -720,6 +722,7 @@ export default function InstitutionNewPage() {
                 onToggle={(value) =>
                   update("archetypes_concernes", toggleArrayValue(form.archetypes_concernes, value))
                 }
+                onSelectAll={(values) => update("archetypes_concernes", values)}
               />
 
               <ChoiceSection
@@ -730,6 +733,7 @@ export default function InstitutionNewPage() {
                 onToggle={(value) =>
                   update("communes_concernees", toggleArrayValue(form.communes_concernees, value))
                 }
+                onSelectAll={(values) => update("communes_concernees", values)}
               />
 
               <ChoiceSection
@@ -743,6 +747,7 @@ export default function InstitutionNewPage() {
                     toggleArrayValue(form.besoins_financement_concernes, value)
                   )
                 }
+                onSelectAll={(values) => update("besoins_financement_concernes", values)}
               />
 
               <ChoiceSection
@@ -751,6 +756,7 @@ export default function InstitutionNewPage() {
                 values={form.documents_requis}
                 color="#8a5f74"
                 onToggle={(value) => update("documents_requis", toggleArrayValue(form.documents_requis, value))}
+                onSelectAll={(values) => update("documents_requis", values)}
               />
 
               <div style={doubleGridStyle}>
@@ -918,16 +924,42 @@ function ChoiceSection({
   values,
   color,
   onToggle,
+  onSelectAll,
 }: {
   label: string;
   options: readonly ChoiceOption[] | ChoiceOption[];
   values: string[];
   color: string;
   onToggle: (value: string) => void;
+  onSelectAll?: (values: string[]) => void;
 }) {
+  const allValues = options.map((opt) => (typeof opt === "string" ? opt : opt.value));
+  const allSelected = allValues.length > 0 && allValues.every((val) => values.includes(val));
+
+  const handleSelectAll = () => {
+    if (onSelectAll) {
+      onSelectAll(allSelected ? [] : allValues);
+    }
+  };
+
   return (
     <div style={sectionStyle}>
-      <label style={labelStyle}>{label}</label>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <label style={labelStyle}>{label}</label>
+        {onSelectAll && (
+          <button
+            type="button"
+            onClick={handleSelectAll}
+            style={{
+              ...selectAllButtonStyle,
+              background: allSelected ? color : colors.line,
+              color: allSelected ? colors.white : colors.ink,
+            }}
+          >
+            {allSelected ? "✓ Tous" : "Tous"}
+          </button>
+        )}
+      </div>
       <div style={chipsGridStyle}>
         {options.map((option) => {
           const normalized = readChoiceOption(option);
@@ -1082,6 +1114,21 @@ const buttonStyle = {
   cursor: "pointer",
   fontSize: 14,
   padding: "0 16px",
+} as const;
+
+const selectAllButtonStyle = {
+  minHeight: 32,
+  borderRadius: 8,
+  border: "none",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 6,
+  fontWeight: 700,
+  cursor: "pointer",
+  fontSize: 12,
+  padding: "0 12px",
+  transition: "all 150ms ease",
 } as const;
 
 const alertBoxStyle = {
