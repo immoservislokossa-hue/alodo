@@ -146,8 +146,10 @@ export default function OnboardingPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Show language selection immediately; do not block UI on profile load
   const [saving, setSaving] = useState(false);
+  const [processingSignup, setProcessingSignup] = useState(false);
+  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -175,15 +177,14 @@ export default function OnboardingPage() {
   }, [muted, form.langue]);
 
   useEffect(() => {
-    if (!loading) playAudio(step);
-  }, [step, form.langue, loading, playAudio]);
+    playAudio(step);
+  }, [step, form.langue, playAudio]);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          setLoading(false);
           return;
         }
         setUserId(user.id);
@@ -193,18 +194,19 @@ export default function OnboardingPage() {
           .eq("user_id", user.id)
           .single();
         if (profile) {
-          // If the profile already has a type or admin role, redirect to the correct area
-          try {
-            const dest = getPathForProfile({ type: profile.type, role: profile.role });
-            if (dest) {
+          // Only redirect automatically when user has a role=admin or a defined profile type
+          if (profile.role === 'admin' || profile.type) {
+            try {
+              
+              const dest = getPathForProfile({ type: profile.type, role: profile.role });
               router.replace(dest);
-              setLoading(false);
               return;
+            } catch (redirectErr) {
+              console.error('Redirect error:', redirectErr);
             }
-          } catch (redirectErr) {
-            // ignore and continue onboarding flow
-            console.error('Redirect error:', redirectErr);
           }
+
+          // Populate onboarding form with existing profile data (continue onboarding)
           setForm({
             langue: profile.langue || "fr",
             phone: formatPhone(profile.phone || ""),
@@ -218,6 +220,7 @@ export default function OnboardingPage() {
             revenu: profile.revenu_mensuel_estime_fcfa || null,
             documents: profile.documents_disponibles || {},
           });
+
           if (!profile.phone) setStep("telephone");
           else if (!profile.type) setStep("type-profil");
           else if (!profile.archetype) setStep("archetype");
@@ -230,8 +233,6 @@ export default function OnboardingPage() {
         }
       } catch (e) {
         console.error(e);
-      } finally {
-        setLoading(false);
       }
     };
     loadProfile();
@@ -289,6 +290,7 @@ export default function OnboardingPage() {
       return;
     }
     setError("");
+    setStatus("");
     const email = phoneToEmail(form.phone);
     try {
       // Vérifier si l'utilisateur existe déjà
@@ -317,34 +319,50 @@ export default function OnboardingPage() {
 
       if (signUpError) {
         console.error("Signup error:", signUpError);
-        if (signUpError.message.includes("User already registered")) {
+        if (signUpError.message && signUpError.message.includes("User already registered")) {
           setError("Ce numéro est déjà utilisé. Connectez-vous.");
         } else {
-          setError("Erreur d'inscription: " + signUpError.message);
+          setError("Erreur d'inscription: " + (signUpError.message ?? ''));
         }
         return;
       }
 
       if (data.user) {
         setUserId(data.user.id);
-        
-        // Créer le profil dans la table profiles
-        const { error: profileError } = await supabase.from("profiles").insert({
-          user_id: data.user.id,
-          langue: form.langue,
-          phone: normalizePhone(form.phone),
-          type: null,
-          role: "user",
-          reputation_score: 3.5,
-        });
 
-        if (profileError) {
-          console.error("Profile creation error:", profileError);
-          setError("Compte créé mais erreur lors de la configuration du profil.");
-          return;
+        // Wait a short time to let Supabase propagate auth/session
+        setProcessingSignup(true)
+        setStatus('En cours...')
+        await new Promise((res) => setTimeout(res, 3000))
+
+        try {
+          const { error: profileError } = await supabase.from("profiles").insert({
+            user_id: data.user.id,
+            langue: form.langue,
+            phone: normalizePhone(form.phone),
+            type: null,
+            role: "user",
+            reputation_score: 3.5,
+          });
+
+          if (profileError) {
+            console.error("Profile creation error:", profileError);
+            // keep a neutral status message instead of showing raw error
+            setStatus('En cours...')
+            setProcessingSignup(false)
+            nextStep();
+            return;
+          }
+
+          setStatus("")
+          setProcessingSignup(false)
+          nextStep();
+        } catch (err) {
+          console.error('Signup->profile exception', err)
+          setStatus('En cours...')
+          setProcessingSignup(false)
+          nextStep();
         }
-
-        nextStep();
       }
     } catch (err) {
       console.error("Signup exception:", err);
@@ -401,9 +419,21 @@ export default function OnboardingPage() {
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.code}
-                  onClick={() => {
-                    updateForm("langue", lang.code as ProfileLang);
-                    nextStep();
+                  onClick={async () => {
+                    const code = lang.code as ProfileLang;
+                    updateForm("langue", code);
+
+                    // If user is already authenticated, persist language immediately
+                    if (userId) {
+                      try {
+                        await supabase.from("profiles").upsert({ user_id: userId, langue: code }, { onConflict: "user_id" });
+                      } catch (e) {
+                        console.error("Failed to save language:", e);
+                      }
+                    }
+
+                    // Advance immediately to the next step
+                    setStep("connexion");
                   }}
                   style={{
                     background: lang.color,
@@ -483,10 +513,13 @@ export default function OnboardingPage() {
                 </button>
               </div>
             </div>
-            {error && <div style={{ background: colors.softRed, color: colors.beninRed, padding: 12, borderRadius: 48, marginBottom: 20 }}>{error}</div>}
+            {error && <div style={{ background: colors.softRed, color: colors.beninRed, padding: 12, borderRadius: 48, marginBottom: 12 }}>{error}</div>}
+            {status && <div style={{ background: colors.softBlue, color: colors.deepBlue, padding: 12, borderRadius: 48, marginBottom: 12 }}>{status}</div>}
             <div style={{ display: "flex", gap: 12, flexDirection: "column" }}>
               <button onClick={login} style={{ background: colors.beninGreen, color: colors.white, border: "none", borderRadius: 48, padding: "14px 24px", fontSize: 16, fontWeight: "bold", cursor: "pointer" }}>Se connecter</button>
-              <button onClick={signup} style={{ background: colors.deepBlue, color: colors.white, border: "none", borderRadius: 48, padding: "14px 24px", fontSize: 16, fontWeight: "bold", cursor: "pointer" }}>Créer un compte</button>
+              <button onClick={signup} disabled={processingSignup} style={{ background: colors.deepBlue, color: colors.white, border: "none", borderRadius: 48, padding: "14px 24px", fontSize: 16, fontWeight: "bold", cursor: processingSignup ? 'default' : 'pointer', opacity: processingSignup ? 0.7 : 1 }}>
+                {processingSignup ? 'En cours...' : 'Créer un compte'}
+              </button>
             </div>
             <div style={{ marginTop: 24 }}>
               <button onClick={prevStep} style={{ background: "none", border: "none", color: colors.gray500, cursor: "pointer" }}>← Retour</button>
@@ -814,17 +847,7 @@ export default function OnboardingPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: colors.white }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: 48, height: 48, border: `4px solid ${colors.gray200}`, borderTop: `4px solid ${colors.beninGreen}`, borderRadius: "50%", animation: "spin 1s linear infinite", marginBottom: 16 }} />
-          <p style={{ color: colors.gray700 }}>Chargement...</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      </div>
-    );
-  }
+  
 
   return (
     <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${colors.gray50} 0%, ${colors.white} 100%)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>

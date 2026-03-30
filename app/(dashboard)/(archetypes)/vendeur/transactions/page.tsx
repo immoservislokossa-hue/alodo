@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -55,11 +55,6 @@ const transactionTypes = [
   { id: "dette", label: "Dette", icon: HandCoins, color: colors.beninYellow, bgColor: `${colors.beninYellow}10`, type: "neutral" },
   { id: "paiement", label: "Paiement", icon: CreditCard, color: colors.deepBlue, bgColor: `${colors.deepBlue}10`, type: "negative" },
 ];
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-);
 
 export default function TransactionsPage() {
   const router = useRouter();

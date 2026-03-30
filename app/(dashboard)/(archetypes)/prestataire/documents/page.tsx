@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -79,11 +79,6 @@ const DOCUMENT_TYPES = [
   { value: "attestation", label: "Attestation de résidence" },
   { value: "autre", label: "Autre document" },
 ];
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function DocumentsPage() {
   const router = useRouter();

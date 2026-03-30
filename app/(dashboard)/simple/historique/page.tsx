@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import {
   BarChart3,
   TrendingUp,
@@ -24,11 +24,6 @@ import {
   LineChart,
   Activity
 } from "lucide-react";
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-);
 
 const colors = {
   white: "#FFFFFF",

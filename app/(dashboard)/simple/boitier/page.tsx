@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-);
+import supabase from "@/src/lib/supabase/browser";
 
 const colors = {
   white: "#FFFFFF",
@@ -55,13 +50,32 @@ export default function BoitierUI() {
     const getProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("user_id", user.id)
-          .single();
-        
-        if (profile) setProfileId(profile.id);
+        try {
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          if (error && !profile) {
+            // No profile found — create a minimal profile so transactions can be saved
+            const { data: created, error: createErr } = await supabase
+              .from("profiles")
+              .insert({ user_id: user.id, role: "user" })
+              .select("id")
+              .single();
+
+            if (createErr) {
+              console.error("Erreur création profil minimal:", createErr);
+            } else if (created) {
+              setProfileId(created.id);
+            }
+          } else if (profile) {
+            setProfileId(profile.id);
+          }
+        } catch (err) {
+          console.error("Erreur récupération profil:", err);
+        }
       }
     };
     getProfile();

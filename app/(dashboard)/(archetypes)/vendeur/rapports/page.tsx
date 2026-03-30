@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -70,11 +70,6 @@ type Stats = {
   avgTransaction: number;
   bestSellingProduct: { nom: string; total: number } | null;
 };
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-);
 
 export default function RapportsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

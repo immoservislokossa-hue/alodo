@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import { 
   ArrowLeft, 
   Plus, 
@@ -101,10 +101,6 @@ type DocumentTemplate = {
 export default function ProjetDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-  );
   const projectId = params.id as string;
 
   const [project, setProject] = useState<Project | null>(null);

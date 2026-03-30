@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import { ArrowLeft, Package, Save, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -21,11 +21,6 @@ const colors = {
   gray600: "#4B5563",
   gray700: "#374151",
 };
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-);
 
 type Produit = {
   id: string;

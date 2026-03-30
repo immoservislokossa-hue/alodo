@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
+import supabase from "@/src/lib/supabase/browser";
 import Link from "next/link";
 import { 
   Package, 
@@ -45,11 +45,6 @@ type Produit = {
   created_at: string;
 };
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-);
-
 export default function ProduitsPage() {
   const router = useRouter();
   const [produits, setProduits] = useState<Produit[]>([]);
@@ -63,16 +58,24 @@ export default function ProduitsPage() {
   const fetchProduits = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Utilisateur non connecté");
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        setError("Veuillez vous connecter");
+        setLoading(false);
+        return;
+      }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
         .single();
 
-      if (!profile) throw new Error("Profil non trouvé");
+      if (profileError || !profile) {
+        setError("Profil non trouvé. Finalisez votre inscription.");
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("produits")
