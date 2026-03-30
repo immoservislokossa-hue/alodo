@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Smartphone } from "lucide-react";
 
-// Couleurs branding
 const colors = {
   white: "#FFFFFF",
   deepBlue: "#1a3c6b",
@@ -51,13 +50,13 @@ export default function PublicHomePage() {
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        padding: "24px",
+        padding: "0px",
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
+        margin: 0,
       }}
     >
-      {/* Décors de fond */}
       <div
         style={{
           position: "absolute",
@@ -85,14 +84,13 @@ export default function PublicHomePage() {
         }}
       />
 
-      {/* Titre */}
       <h1
         style={{
-          fontSize: "clamp(36px, 8vw, 64px)",
+          fontSize: "clamp(32px, 8vw, 64px)",
           fontWeight: 800,
           color: colors.deepBlue,
           lineHeight: 1.2,
-          marginBottom: "24px",
+          marginBottom: "20px",
         }}
       >
         L'inclusion financière
@@ -109,32 +107,30 @@ export default function PublicHomePage() {
         </span>
       </h1>
 
-      {/* Description */}
       <p
         style={{
-          fontSize: "clamp(16px, 4vw, 20px)",
+          fontSize: "clamp(14px, 4vw, 20px)",
           color: colors.gray500,
           maxWidth: "520px",
-          marginBottom: "16px",
-          lineHeight: 1.6,
+          marginBottom: "12px",
+          lineHeight: 1.5,
         }}
       >
         Alɔdó est la première plateforme SaaS qui connecte les MPME, agents terrain et institutions financières.
       </p>
       <p
         style={{
-          fontSize: "clamp(16px, 4vw, 20px)",
+          fontSize: "clamp(14px, 4vw, 20px)",
           color: colors.gray500,
           maxWidth: "520px",
-          marginBottom: "32px",
-          lineHeight: 1.6,
+          marginBottom: "28px",
+          lineHeight: 1.5,
         }}
       >
         Transformez l'économie informelle en un système structuré et prospère grâce à notre application sécurisée et intuitive.
       </p>
 
-      {/* CTA boutons */}
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", justifyContent: "center" }}>
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
         {isInstallable && (
           <button
             onClick={handleInstallClick}
@@ -142,20 +138,20 @@ export default function PublicHomePage() {
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              minHeight: "56px",
-              padding: "12px 32px",
+              minHeight: "48px",
+              padding: "10px 24px",
               backgroundColor: colors.beninYellow,
               border: `2px solid ${colors.beninYellow}`,
               color: colors.deepBlue,
               borderRadius: "12px",
               fontWeight: 600,
-              fontSize: "16px",
+              fontSize: "14px",
               cursor: "pointer",
               transition: "all 200ms ease",
             }}
           >
             <Smartphone size={18} />
-            Installer maintenant
+            Installer
           </button>
         )}
 
@@ -165,13 +161,13 @@ export default function PublicHomePage() {
             display: "inline-flex",
             alignItems: "center",
             gap: "8px",
-            minHeight: "56px",
-            padding: "12px 32px",
+            minHeight: "48px",
+            padding: "10px 24px",
             backgroundColor: colors.deepBlue,
             color: colors.white,
             borderRadius: "12px",
             fontWeight: 600,
-            fontSize: "16px",
+            fontSize: "14px",
             cursor: "pointer",
             textDecoration: "none",
             transition: "all 200ms ease",
