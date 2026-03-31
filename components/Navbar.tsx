@@ -23,8 +23,6 @@ type NavItem = {
   icon: React.ElementType; 
   label: string; 
   color: string; 
-  forVendeur?: boolean; 
-  forPrestataire?: boolean;
 };
 
 export default function Navbar() {
@@ -35,7 +33,7 @@ export default function Navbar() {
   const [isCollapsed, setIsCollapsed] = useState(false); 
   const [scrolled, setScrolled] = useState(false); 
   const [isMobile, setIsMobile] = useState(false);
-  const [dashboardBasePath, setDashboardBasePath] = useState<string>("/");
+  const [dashboardPath, setDashboardPath] = useState<string>("/");
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -71,11 +69,11 @@ export default function Navbar() {
         
         if (active && profileData) {
           setProfile(profileData);
-          // Définir le chemin de base du tableau de bord en fonction du type
+          // Définir le chemin du tableau de bord en fonction du type
           if (profileData.type === "vendeur") {
-            setDashboardBasePath("/vendeur");
+            setDashboardPath("/vendeur");
           } else if (profileData.type === "prestataire") {
-            setDashboardBasePath("/prestataire");
+            setDashboardPath("/prestataire");
           }
         }
       } catch (err) { 
@@ -88,34 +86,32 @@ export default function Navbar() {
     return () => { active = false; };
   }, []);
 
-  // Navigation items dynamiques basés sur le type de profil
+  // Navigation items - uniquement /vendeur ou /prestataire selon le profil
   const getNavItems = (): NavItem[] => {
-    const baseItems: NavItem[] = [
+    const items: NavItem[] = [
       { href: "/opportunites", icon: TrendingUp, label: "Opportunités", color: colors.beninGreen },
       { href: "/formalisation", icon: Bot, label: "Assistant", color: colors.beninYellow },
       { href: "/profil", icon: User, label: "Profil", color: colors.gray600 },
     ];
 
-    // Ajouter les items spécifiques au type de profil
+    // Ajouter le tableau de bord spécifique au type de profil à la première position
     if (profile?.type === "vendeur") {
-      baseItems.splice(1, 0, { 
+      items.unshift({ 
         href: "/vendeur", 
         icon: Store, 
         label: "Tableau de bord", 
-        color: colors.deepBlue,
-        forVendeur: true 
+        color: colors.deepBlue 
       });
     } else if (profile?.type === "prestataire") {
-      baseItems.splice(1, 0, { 
+      items.unshift({ 
         href: "/prestataire", 
         icon: Wrench, 
         label: "Tableau de bord", 
-        color: colors.deepBlue,
-        forPrestataire: true 
+        color: colors.deepBlue 
       });
     }
 
-    return baseItems;
+    return items;
   };
 
   const navItems = getNavItems();
