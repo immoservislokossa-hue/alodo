@@ -91,7 +91,7 @@ export default function ProjetsPage() {
     client_id: "",
     budget: "",
     start_date: new Date().toISOString().split("T")[0],
-    status: "draft" as const,
+    status: "draft" as "draft" | "ongoing" | "completed" | "cancelled",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -111,6 +111,19 @@ export default function ProjetsPage() {
         return;
       }
 
+      // Récupérer le profil utilisateur
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error("Profil non trouvé:", profileError);
+        setIsLoading(false);
+        return;
+      }
+
       // Récupérer les projets avec leurs clients
       const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
@@ -118,7 +131,7 @@ export default function ProjetsPage() {
           *,
           client:clients (*)
         `)
-        .eq("user_id", user.id)
+        .eq("user_id", profile.id)
         .order("created_at", { ascending: false });
 
       if (projectsError) {
@@ -129,7 +142,7 @@ export default function ProjetsPage() {
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("user_id", profile.id)
         .order("name");
 
       if (clientsError) {
@@ -156,10 +169,22 @@ export default function ProjetsPage() {
         return;
       }
 
+      // Récupérer le profil
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!profile) {
+        alert("Profil non trouvé");
+        return;
+      }
+
       const { error } = await supabase
         .from("clients")
         .insert({
-          user_id: user.id,
+          user_id: profile.id,
           name: formData.name,
           phone: formData.phone,
           email: formData.email || null,
@@ -230,10 +255,22 @@ export default function ProjetsPage() {
         return;
       }
 
+      // Récupérer le profil
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!profile) {
+        alert("Profil non trouvé");
+        return;
+      }
+
       const { error } = await supabase
         .from("projects")
         .insert({
-          user_id: user.id,
+          user_id: profile.id,
           title: projectForm.title,
           description: projectForm.description || null,
           client_id: projectForm.client_id || null,
