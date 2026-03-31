@@ -188,15 +188,7 @@ export default function PrestatairePage() {
                   {module.title}
                 </div>
                 
-                {/* Description */}
-                <div style={{
-                  fontSize: "12px",
-                  color: colors.grayText,
-                  textAlign: "center",
-                  lineHeight: 1.4,
-                }}>
-                  {module.description}
-                </div>
+               
               </Link>
             );
           })}
