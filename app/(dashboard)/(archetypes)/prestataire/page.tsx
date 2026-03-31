@@ -67,7 +67,7 @@ const modules = [
     description: "Calculatrice et transactions immédiates"
   },
   {
-    href: "/prestataire/historique",
+    href: "/simple/historique",
     icon: Clock,
     color: colors.grayTitle,
     bgLight: "#F3F4F6",
@@ -203,19 +203,7 @@ export default function PrestatairePage() {
         </div>
 
         {/* Pied de page */}
-        <div style={{
-          marginTop: "32px",
-          paddingTop: "20px",
-          borderTop: `1px solid ${colors.grayBorder}`,
-          textAlign: "center",
-        }}>
-          <p style={{
-            fontSize: "11px",
-            color: colors.grayText,
-          }}>
-            Plateforme de gestion professionnelle
-          </p>
-        </div>
+         
       </div>
     </div>
   );

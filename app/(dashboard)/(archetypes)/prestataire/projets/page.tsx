@@ -7,11 +7,8 @@ import {
   ArrowLeft, 
   Plus, 
   Search, 
-  Filter,
-  Eye,
   Edit,
   Trash2,
-  MoreHorizontal,
   FolderOpen,
   CheckCircle,
   Clock,
@@ -20,7 +17,8 @@ import {
   Users,
   Briefcase,
   DollarSign,
-  Calendar
+  Calendar,
+  X
 } from "lucide-react";
 
 const colors = {
@@ -43,15 +41,19 @@ const colors = {
 
 type Client = {
   id: string;
+  user_id: string;
   name: string;
   phone: string;
   email: string | null;
   address: string | null;
+  notes: any;
   created_at: string;
 };
 
 type Project = {
   id: string;
+  user_id: string;
+  client_id: string | null;
   title: string;
   description: string | null;
   status: "draft" | "ongoing" | "completed" | "cancelled";
@@ -62,16 +64,7 @@ type Project = {
   start_date: string;
   end_date: string | null;
   created_at: string;
-  client_id: string | null;
   client?: Client;
-};
-
-type Document = {
-  id: string;
-  type: "devis" | "facture" | "contrat";
-  status: string;
-  file_url: string | null;
-  created_at: string;
 };
 
 export default function ProjetsPage() {
@@ -85,6 +78,7 @@ export default function ProjetsPage() {
   const [showClientModal, setShowClientModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -101,6 +95,7 @@ export default function ProjetsPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [deleteType, setDeleteType] = useState<"client" | "project">("project");
 
   useEffect(() => {
     fetchData();
@@ -110,29 +105,41 @@ export default function ProjetsPage() {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error("Utilisateur non connecté");
+        setIsLoading(false);
+        return;
+      }
 
       // Récupérer les projets avec leurs clients
-      const { data: projectsData } = await supabase
+      const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select(`
           *,
-          client:clients(*)
+          client:clients (*)
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
+      if (projectsError) {
+        console.error("Erreur chargement projets:", projectsError);
+      }
+
       // Récupérer tous les clients
-      const { data: clientsData } = await supabase
+      const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select("*")
         .eq("user_id", user.id)
         .order("name");
 
+      if (clientsError) {
+        console.error("Erreur chargement clients:", clientsError);
+      }
+
       if (projectsData) setProjects(projectsData as Project[]);
       if (clientsData) setClients(clientsData);
     } catch (error) {
-      console.error("Erreur:", error);
+      console.error("Erreur lors du chargement:", error);
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +151,10 @@ export default function ProjetsPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        alert("Vous devez être connecté");
+        return;
+      }
 
       const { error } = await supabase
         .from("clients")
@@ -154,15 +164,56 @@ export default function ProjetsPage() {
           phone: formData.phone,
           email: formData.email || null,
           address: formData.address || null,
+          notes: {}
         });
 
-      if (!error) {
+      if (error) {
+        console.error("Erreur création client:", error);
+        alert(`Erreur: ${error.message}`);
+      } else {
         setShowClientModal(false);
         setFormData({ name: "", phone: "", email: "", address: "" });
         fetchData();
+        alert("Client créé avec succès!");
       }
     } catch (error) {
       console.error("Erreur:", error);
+      alert("Erreur lors de la création du client");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      if (!selectedClient) return;
+
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+          address: formData.address || null,
+        })
+        .eq("id", selectedClient.id);
+
+      if (error) {
+        console.error("Erreur modification client:", error);
+        alert(`Erreur: ${error.message}`);
+      } else {
+        setShowClientModal(false);
+        setSelectedClient(null);
+        setFormData({ name: "", phone: "", email: "", address: "" });
+        fetchData();
+        alert("Client modifié avec succès!");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur lors de la modification du client");
     } finally {
       setIsSubmitting(false);
     }
@@ -174,7 +225,10 @@ export default function ProjetsPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        alert("Vous devez être connecté");
+        return;
+      }
 
       const { error } = await supabase
         .from("projects")
@@ -186,9 +240,16 @@ export default function ProjetsPage() {
           budget: parseFloat(projectForm.budget) || 0,
           start_date: projectForm.start_date,
           status: projectForm.status,
+          total_income: 0,
+          total_expense: 0,
+          margin: 0,
+          end_date: null,
         });
 
-      if (!error) {
+      if (error) {
+        console.error("Erreur création projet:", error);
+        alert(`Erreur: ${error.message}`);
+      } else {
         setShowProjectModal(false);
         setProjectForm({
           title: "",
@@ -199,9 +260,55 @@ export default function ProjetsPage() {
           status: "draft",
         });
         fetchData();
+        alert("Projet créé avec succès!");
       }
     } catch (error) {
       console.error("Erreur:", error);
+      alert("Erreur lors de la création du projet");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      if (!selectedProject) return;
+
+      const { error } = await supabase
+        .from("projects")
+        .update({
+          title: projectForm.title,
+          description: projectForm.description || null,
+          client_id: projectForm.client_id || null,
+          budget: parseFloat(projectForm.budget) || 0,
+          start_date: projectForm.start_date,
+          status: projectForm.status,
+        })
+        .eq("id", selectedProject.id);
+
+      if (error) {
+        console.error("Erreur modification projet:", error);
+        alert(`Erreur: ${error.message}`);
+      } else {
+        setShowProjectModal(false);
+        setSelectedProject(null);
+        setProjectForm({
+          title: "",
+          description: "",
+          client_id: "",
+          budget: "",
+          start_date: new Date().toISOString().split("T")[0],
+          status: "draft",
+        });
+        fetchData();
+        alert("Projet modifié avec succès!");
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      alert("Erreur lors de la modification du projet");
     } finally {
       setIsSubmitting(false);
     }
@@ -214,12 +321,17 @@ export default function ProjetsPage() {
         .delete()
         .eq("id", id);
 
-      if (!error) {
+      if (error) {
+        console.error("Erreur suppression projet:", error);
+        alert(`Erreur: ${error.message}`);
+      } else {
         setShowDeleteConfirm(null);
         fetchData();
+        alert("Projet supprimé avec succès!");
       }
     } catch (error) {
       console.error("Erreur:", error);
+      alert("Erreur lors de la suppression du projet");
     }
   };
 
@@ -230,13 +342,42 @@ export default function ProjetsPage() {
         .delete()
         .eq("id", id);
 
-      if (!error) {
+      if (error) {
+        console.error("Erreur suppression client:", error);
+        alert(`Erreur: ${error.message}`);
+      } else {
         setShowDeleteConfirm(null);
         fetchData();
+        alert("Client supprimé avec succès!");
       }
     } catch (error) {
       console.error("Erreur:", error);
+      alert("Erreur lors de la suppression du client");
     }
+  };
+
+  const openEditClient = (client: Client) => {
+    setSelectedClient(client);
+    setFormData({
+      name: client.name,
+      phone: client.phone,
+      email: client.email || "",
+      address: client.address || "",
+    });
+    setShowClientModal(true);
+  };
+
+  const openEditProject = (project: Project) => {
+    setSelectedProject(project);
+    setProjectForm({
+      title: project.title,
+      description: project.description || "",
+      client_id: project.client_id || "",
+      budget: project.budget.toString(),
+      start_date: project.start_date.split("T")[0],
+      status: project.status,
+    });
+    setShowProjectModal(true);
   };
 
   const filteredProjects = projects.filter(project => {
@@ -332,7 +473,11 @@ export default function ProjetsPage() {
           </div>
           <div style={{ display: "flex", gap: "12px" }}>
             <button
-              onClick={() => setShowClientModal(true)}
+              onClick={() => {
+                setSelectedClient(null);
+                setFormData({ name: "", phone: "", email: "", address: "" });
+                setShowClientModal(true);
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -353,7 +498,18 @@ export default function ProjetsPage() {
               Nouveau client
             </button>
             <button
-              onClick={() => setShowProjectModal(true)}
+              onClick={() => {
+                setSelectedProject(null);
+                setProjectForm({
+                  title: "",
+                  description: "",
+                  client_id: "",
+                  budget: "",
+                  start_date: new Date().toISOString().split("T")[0],
+                  status: "draft",
+                });
+                setShowProjectModal(true);
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -432,7 +588,7 @@ export default function ProjetsPage() {
               <span style={{ fontSize: "12px", color: colors.gray500 }}>Budget total</span>
             </div>
             <div style={{ fontSize: "24px", fontWeight: 600, color: colors.beninGreen }}>
-              {projects.reduce((sum, p) => sum + p.budget, 0).toLocaleString()} FCFA
+              {projects.reduce((sum, p) => sum + (p.budget || 0), 0).toLocaleString()} FCFA
             </div>
           </div>
         </div>
@@ -479,6 +635,7 @@ export default function ProjetsPage() {
                     <button
                       onClick={() => {
                         setProjectForm({ ...projectForm, client_id: client.id });
+                        setSelectedProject(null);
                         setShowProjectModal(true);
                       }}
                       style={{
@@ -493,7 +650,23 @@ export default function ProjetsPage() {
                       <Plus size={14} color={colors.deepBlue} />
                     </button>
                     <button
-                      onClick={() => setShowDeleteConfirm(client.id)}
+                      onClick={() => openEditClient(client)}
+                      style={{
+                        padding: "6px",
+                        backgroundColor: `${colors.beninYellow}10`,
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                      }}
+                      title="Modifier"
+                    >
+                      <Edit size={14} color={colors.beninYellow} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteType("client");
+                        setShowDeleteConfirm(client.id);
+                      }}
                       style={{
                         padding: "6px",
                         backgroundColor: `${colors.beninRed}10`,
@@ -628,10 +801,7 @@ export default function ProjetsPage() {
                   </div>
                   <div style={{ display: "flex", gap: "8px" }} onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => {
-                        setSelectedProject(project);
-                        setShowProjectModal(true);
-                      }}
+                      onClick={() => openEditProject(project)}
                       style={{
                         padding: "6px",
                         backgroundColor: `${colors.deepBlue}10`,
@@ -644,7 +814,10 @@ export default function ProjetsPage() {
                       <Edit size={14} color={colors.deepBlue} />
                     </button>
                     <button
-                      onClick={() => setShowDeleteConfirm(project.id)}
+                      onClick={() => {
+                        setDeleteType("project");
+                        setShowDeleteConfirm(project.id);
+                      }}
                       style={{
                         padding: "6px",
                         backgroundColor: `${colors.beninRed}10`,
@@ -690,7 +863,7 @@ export default function ProjetsPage() {
         </div>
       </div>
 
-      {/* Modal Nouveau Client */}
+      {/* Modal Client */}
       {showClientModal && (
         <div style={{
           position: "fixed",
@@ -716,12 +889,17 @@ export default function ProjetsPage() {
               justifyContent: "space-between",
               alignItems: "center",
             }}>
-              <h2 style={{ fontSize: "20px", fontWeight: 600, color: colors.deepBlue }}>Nouveau client</h2>
-              <button onClick={() => setShowClientModal(false)} style={{ padding: "8px", background: "transparent", border: "none", cursor: "pointer" }}>
-                <XCircle size={20} color={colors.gray500} />
+              <h2 style={{ fontSize: "20px", fontWeight: 600, color: colors.deepBlue }}>
+                {selectedClient ? "Modifier le client" : "Nouveau client"}
+              </h2>
+              <button onClick={() => {
+                setShowClientModal(false);
+                setSelectedClient(null);
+              }} style={{ padding: "8px", background: "transparent", border: "none", cursor: "pointer" }}>
+                <X size={20} color={colors.gray500} />
               </button>
             </div>
-            <form onSubmit={handleCreateClient} style={{ padding: "24px" }}>
+            <form onSubmit={selectedClient ? handleUpdateClient : handleCreateClient} style={{ padding: "24px" }}>
               <div style={{ marginBottom: "16px" }}>
                 <label style={{ display: "block", fontSize: "14px", fontWeight: 500, marginBottom: "8px", color: colors.gray700 }}>Nom complet *</label>
                 <input
@@ -775,14 +953,14 @@ export default function ProjetsPage() {
                   opacity: isSubmitting ? 0.5 : 1,
                 }}
               >
-                {isSubmitting ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} /> : "Créer le client"}
+                {isSubmitting ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} /> : (selectedClient ? "Modifier" : "Créer")}
               </button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal Nouveau/Modifier Projet */}
+      {/* Modal Projet */}
       {showProjectModal && (
         <div style={{
           position: "fixed",
@@ -814,19 +992,11 @@ export default function ProjetsPage() {
               <button onClick={() => {
                 setShowProjectModal(false);
                 setSelectedProject(null);
-                setProjectForm({
-                  title: "",
-                  description: "",
-                  client_id: "",
-                  budget: "",
-                  start_date: new Date().toISOString().split("T")[0],
-                  status: "draft",
-                });
               }} style={{ padding: "8px", background: "transparent", border: "none", cursor: "pointer" }}>
-                <XCircle size={20} color={colors.gray500} />
+                <X size={20} color={colors.gray500} />
               </button>
             </div>
-            <form onSubmit={handleCreateProject} style={{ padding: "24px" }}>
+            <form onSubmit={selectedProject ? handleUpdateProject : handleCreateProject} style={{ padding: "24px" }}>
               <div style={{ marginBottom: "16px" }}>
                 <label style={{ display: "block", fontSize: "14px", fontWeight: 500, marginBottom: "8px", color: colors.gray700 }}>Titre du projet *</label>
                 <input
@@ -905,7 +1075,7 @@ export default function ProjetsPage() {
                   opacity: isSubmitting ? 0.5 : 1,
                 }}
               >
-                {isSubmitting ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} /> : (selectedProject ? "Modifier" : "Créer le projet")}
+                {isSubmitting ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} /> : (selectedProject ? "Modifier" : "Créer")}
               </button>
             </form>
           </div>
@@ -963,8 +1133,7 @@ export default function ProjetsPage() {
               </button>
               <button
                 onClick={() => {
-                  const isClient = clients.some(c => c.id === showDeleteConfirm);
-                  if (isClient) {
+                  if (deleteType === "client") {
                     handleDeleteClient(showDeleteConfirm);
                   } else {
                     handleDeleteProject(showDeleteConfirm);
