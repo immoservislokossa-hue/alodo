@@ -81,7 +81,7 @@ export default function PrestatairePage() {
     <div style={{
       minHeight: "100vh",
       background: colors.grayBg,
-      padding: "24px 16px",
+      padding: "24px 16px 90px 16px", // Ajout de padding-bottom: 90px pour la navbar mobile
     }}>
       <div style={{
         maxWidth: "900px",
@@ -187,15 +187,16 @@ export default function PrestatairePage() {
                 }}>
                   {module.title}
                 </div>
-                
                
               </Link>
             );
           })}
         </div>
 
-        {/* Pied de page */}
-         
+        {/* Pied de page avec espace supplémentaire pour mobile */}
+        <div style={{
+          height: "20px",
+        }} />
       </div>
     </div>
   );
