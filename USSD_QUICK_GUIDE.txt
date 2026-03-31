@@ -1,0 +1,140 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                      GUIDE RAPIDE - ALODO USSD                              ║
+║                    Composez votre numéro pour commencer                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ ACCÈS RAPIDE ─────────────────────────────────────────────────────────────┐
+│                                                                              │
+│  🏠 Accueil (Informations):        /demo                                    │
+│  📞 Simulateur USSD (Test):         /demo/simulator                         │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ ÉTAPES D'UTILISATION ─────────────────────────────────────────────────────┐
+│                                                                              │
+│  1️⃣   *202#   aller recuperer la liste des oppportunirtes au niveau des deux tables de supabase                 │
+│                                                                              │
+│  2️⃣  Consultez la liste des opportunités avec les prix en FCFA             │
+│      Exemple:                                    ici                            │
+│      1. Développeur Full Stack                                              │
+│         💰 500K - 1.5M FCFA                                                 │
+│         🏢 Tech Startup Cotonou                                             │
+│                                                                              │
+│  3️⃣  Tapez le numéro de l'opportunité pour voir les détails                │
+│      Exemple: 1                                                             │
+│                                                                              │
+│  4️⃣  Confirmez votre candidature en tapant 1                               │
+│      Exemple: 1 (pour postuler)                                             │
+│              0 (pour retour)                                                │
+│                                                                              │
+│  5️⃣  Recevez une confirmation immédiate                                    │
+│      ✅ Candidature envoyée avec succès!                                   │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ INFORMATIONS AFFICHÉES ───────────────────────────────────────────────────┐
+│                                                                              │
+│  📋 TITRE DE L'OPPORTUNITÉ                                                  │
+│     Description brève                                                       │
+│                                                                              │
+│  💰 PRIX EN FCFA                                                            │
+│     Format: XXX,XXX - Y,YYY,YYY FCFA (montants min-max)                    │
+│                                                                              │
+│  🏢 INSTITUTION                                                             │
+│     Nom de l'entreprise ou organisme                                        │
+│                                                                              │
+│  📅 DATE LIMITE                                                             │
+│     Jusqu'à quand postuler                                                  │
+│                                                                              │
+│  🎯 SCORE DE MATCHING (si disponible)                                       │
+│     Pourcentage de compatibilité avec votre profil                          │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ COMMANDES ────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│  Numéro d'opportunité (1, 2, 3...)  →  Voir les détails                    │
+│  1                                  →  Postuler                             │
+│  0                                  →  Retourner au menu                    │
+│  *202#                              →  Relancer le service                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ EXEMPLE COMPLET ──────────────────────────────────────────────────────────┐
+│                                                                              │
+│  SYSTÈME: 📱 Bienvenue sur ALODO USSD                                       │
+│           Composez le numéro de votre profil                                │
+│                                                                              │
+│  VOUS:    550e8400-e29b-41d4-a716-446655440000                             │
+│                                                                              │
+│  SYSTÈME: 📞 Chargement du profil...                                        │
+│           📋 Vos Opportunités:                                              │
+│           1. Développeur Full Stack                                         │
+│              💰 500K - 1.5M FCFA                                            │
+│              🏢 Tech Startup Cotonou                                        │
+│           2. Manager de projet                                              │
+│              💰 800K - 2M FCFA                                              │
+│              🏢 Cabinet de Consulting                                       │
+│                                                                              │
+│  VOUS:    1                                                                 │
+│                                                                              │
+│  SYSTÈME: 📋 Détails de l'opportunité:                                      │
+│           Développeur Full Stack                                            │
+│           🏢 Tech Startup Cotonou                                           │
+│           💰 500K - 1.5M FCFA                                               │
+│           📅 Limite: 2026-04-30                                             │
+│           📝 [Description détaillée...]                                     │
+│           Tapez 1 pour postuler ou 0 pour retour                            │
+│                                                                              │
+│  VOUS:    1                                                                 │
+│                                                                              │
+│  SYSTÈME: 🔄 Traitement de votre candidature...                             │
+│           ✅ Candidature envoyée avec succès!                              │
+│           🎯 Opportunité: Développeur Full Stack                            │
+│           💼 Tech Startup Cotonou                                           │
+│           Vous serez contacté(e) dans les 24 heures                         │
+│           Tapez 0 pour retourner au menu                                    │
+│                                                                              │
+│  VOUS:    0                                                                 │
+│                                                                              │
+│  SYSTÈME: 📱 Bienvenue sur ALODO USSD                                       │
+│           Composez le numéro de votre profil                                │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ FAQ ──────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│  Q: Quel format pour mon numéro de profil?                                  │
+│  R: UUID complet (ex: 550e...) ou *202# pour commencer                     │
+│                                                                              │
+│  Q: Comment vois-je le prix de chaque opportunité?                          │
+│  R: Le prix est affiché en FCFA à côté de 💰 dans la liste                 │
+│                                                                              │
+│  Q: Puis-je postuler à plusieurs opportunités?                              │
+│  R: Oui, en revenant au menu (0) et sélectionnant une autre opps           │
+│                                                                              │
+│  Q: Combien de temps avant d'être contacté?                                 │
+│  R: Maximum 24 heures après l'envoi de la candidature                       │
+│                                                                              │
+│  Q: Pourquoi "Profil non trouvé"?                                           │
+│  R: Vérifiez que votre numéro de profil est correct                         │
+│                                                                              │
+│  Q: Est-ce que je dois avoir internet?                                      │
+│  R: Oui, pour accéder à la plateforme web (compatible mobile)              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ SUPPORT ──────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│  Email:    support@alodo.com                                                │
+│  Téléphone: +229 1234 5678                                                  │
+│  Web:      www.alodo.com/demo                                               │
+│                                                                              │
+│  Horaires:  Lun - Ven: 08:00 - 20:00 GMT+1                                  │
+│             Sam - Dim: 09:00 - 18:00 GMT+1                                  │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║  Version 1.0 • ALODO USSD™ © 2026 • Tous droits réservés                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
