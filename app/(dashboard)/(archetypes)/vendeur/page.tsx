@@ -2,16 +2,11 @@
 
 import Link from "next/link";
 import { 
-  FolderOpen, 
+  Package, 
+  TrendingUp, 
   BarChart3, 
   Calculator, 
-  Clock3, 
-  Plus, 
-  ArrowRight,
-  Package,
-  TrendingUp,
-  Wallet,
-  Shield
+  Clock
 } from "lucide-react";
 
 const colors = {
@@ -21,299 +16,189 @@ const colors = {
   beninGreen: "#008751",
   beninYellow: "#FCD116",
   beninRed: "#E8112D",
-  gray50: "#F9FAFB",
-  gray100: "#F3F4F6",
-  gray200: "#E5E7EB",
-  gray300: "#D1D5DB",
-  gray400: "#9CA3AF",
-  gray500: "#6B7280",
-  gray600: "#4B5563",
-  gray700: "#374151",
-  gray800: "#1F2937",
+  beninBlue: "#3498db",
+  grayBg: "#F9FAFB",
+  grayBorder: "#E5E7EB",
+  grayText: "#6B7280",
+  grayTitle: "#374151",
 };
 
-const sections = [
+// 5 cartes avec couleurs intégrées
+const cards = [
   {
-    title: "Gestion des produits",
-    description: "Gérez votre catalogue d'articles",
-    items: [
-      {
-        href: "/vendeur/produits",
-        title: "Mes produits",
-        text: "Consulter, modifier et gérer votre catalogue",
-        icon: FolderOpen,
-        accent: colors.deepBlue,
-        color: colors.deepBlue,
-      },
-      {
-        href: "/vendeur/produits/nouveau",
-        title: "Nouveau produit",
-        text: "Ajouter un article à votre inventaire",
-        icon: Plus,
-        accent: colors.beninGreen,
-        color: colors.beninGreen,
-      },
-    ],
+    href: "/vendeur/produits",
+    icon: Package,
+    color: colors.beninGreen,
+    bgLight: "#E8F5E9",
+    title: "Produits",
+    description: "Gestion du catalogue"
   },
   {
+    href: "/vendeur/transactions",
+    icon: TrendingUp,
+    color: colors.beninYellow,
+    bgLight: "#FFF9E6",
     title: "Transactions",
-    description: "Enregistrez et suivez vos opérations",
-    items: [
-      {
-        href: "/vendeur/transactions",
-        title: "Nouvelle transaction",
-        text: "Vente, achat, dépense, dette ou paiement",
-        icon: Calculator,
-        accent: colors.deepBlue,
-        color: colors.deepBlue,
-      },
-      {
-        href: "/vendeur/rapports",
-        title: "Rapports",
-        text: "Analysez vos performances",
-        icon: BarChart3,
-        accent: colors.beninRed,
-        color: colors.beninRed,
-      },
-    ],
+    description: "Ventes et achats"
   },
   {
-    title: "Accès rapide",
-    description: "Les outils du quotidien",
-    items: [
-      {
-        href: "/simple/boitier",
-        title: "Boitier",
-        text: "Calculatrice et transactions immédiates",
-        icon: Calculator,
-        accent: colors.beninYellow,
-        color: colors.beninYellow,
-      },
-      {
-        href: "/simple/historique",
-        title: "Historique",
-        text: "Toutes vos transactions",
-        icon: Clock3,
-        accent: colors.gray600,
-        color: colors.gray600,
-      },
-    ],
+    href: "/vendeur/rapports",
+    icon: BarChart3,
+    color: colors.beninRed,
+    bgLight: "#FFEBEE",
+    title: "Rapports",
+    description: "Analyses et statistiques"
   },
-];
-
-const stats = [
-  { label: "Transactions", value: "0", icon: TrendingUp, color: colors.beninGreen },
-  { label: "Produits", value: "0", icon: Package, color: colors.deepBlue },
-  { label: "Solde", value: "0 FCFA", icon: Wallet, color: colors.beninYellow },
+  {
+    href: "/simple/boitier",
+    icon: Calculator,
+    color: colors.beninBlue,
+    bgLight: "#E3F2FD",
+    title: "Caisse",
+    description: "Calculatrice intégrée"
+  },
+  {
+    href: "/simple/historique",
+    icon: Clock,
+    color: colors.deepBlue,
+    bgLight: "#E8F0F9",
+    title: "Historique",
+    description: "Toutes les opérations"
+  }
 ];
 
 export default function VendeurPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: colors.gray50,
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      background: colors.grayBg,
+      padding: "24px 16px",
     }}>
       <div style={{
-        maxWidth: "1280px",
+        maxWidth: "680px",
         margin: "0 auto",
-        padding: "24px",
       }}>
         
-        {/* Barre tricolore */}
+        {/* Barre de couleurs - visible sur mobile et desktop */}
         <div style={{
           display: "flex",
-          gap: "4px",
+          gap: "6px",
           marginBottom: "32px",
+          justifyContent: "center"
         }}>
-          <div style={{ flex: 1, height: "4px", background: colors.beninGreen, borderRadius: "2px" }} />
-          <div style={{ flex: 1, height: "4px", background: colors.beninYellow, borderRadius: "2px" }} />
-          <div style={{ flex: 1, height: "4px", background: colors.beninRed, borderRadius: "2px" }} />
+          <div style={{ width: "45px", height: "3px", background: colors.beninGreen, borderRadius: "2px" }} />
+          <div style={{ width: "45px", height: "3px", background: colors.beninYellow, borderRadius: "2px" }} />
+          <div style={{ width: "45px", height: "3px", background: colors.beninRed, borderRadius: "2px" }} />
+          <div style={{ width: "45px", height: "3px", background: colors.beninBlue, borderRadius: "2px" }} />
+          <div style={{ width: "45px", height: "3px", background: colors.deepBlue, borderRadius: "2px" }} />
         </div>
 
-        {/* Hero section */}
+        {/* Titre et sous-titre cachés sur mobile, visibles sur desktop */}
         <div style={{
-          background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
-          borderRadius: "32px",
-          padding: "40px",
+          textAlign: "center",
           marginBottom: "32px",
-          position: "relative",
-          overflow: "hidden",
+          display: "block",
         }}>
-          {/* Décoration */}
-          <div style={{
-            position: "absolute",
-            top: -50,
-            right: -50,
-            width: "200px",
-            height: "200px",
-            background: colors.beninGreen,
-            borderRadius: "50%",
-            opacity: 0.1,
-          }} />
-          <div style={{
-            position: "absolute",
-            bottom: -30,
-            left: -30,
-            width: "150px",
-            height: "150px",
-            background: colors.beninYellow,
-            borderRadius: "50%",
-            opacity: 0.1,
-          }} />
-          
-          <div style={{ position: "relative", zIndex: 2 }}>
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "6px 12px",
-              background: "rgba(255,255,255,0.1)",
-              borderRadius: "100px",
-              marginBottom: "20px",
-            }}>
-              <Shield size={14} color={colors.beninYellow} />
-              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.8)" }}>
-                Espace sécurisé
-              </span>
-            </div>
+          <h1 style={{
+            fontSize: "26px",
+            fontWeight: 600,
+            color: colors.deepBlue,
+            marginBottom: "6px",
+            letterSpacing: "-0.3px"
+          }}>
+            Tableau de bord
+          </h1>
+          <p style={{
+            fontSize: "13px",
+            color: colors.grayText
+          }}>
+            Accédez rapidement aux fonctionnalités principales
+          </p>
+        </div>
+
+        {/* Grille 2 colonnes avec cartes colorées */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "16px",
+        }}>
+          {cards.map((card, index) => {
+            const Icon = card.icon;
+            const isLastCard = index === 4;
             
-            <h1 style={{
-              fontSize: "clamp(28px, 5vw, 42px)",
-              fontWeight: 700,
-              fontFamily: "'Playfair Display', serif",
-              color: colors.white,
-              marginBottom: "12px",
-              letterSpacing: "-0.02em",
-            }}>
-              Bonjour, <span style={{ color: colors.beninYellow }}></span>
-            </h1>
-            
-            <p style={{
-              fontSize: "16px",
-              color: "rgba(255,255,255,0.8)",
-              maxWidth: "500px",
-              lineHeight: 1.5,
-            }}>
-              Gérez vos produits, enregistrez vos transactions et suivez vos performances en temps réel.
-            </p>
-          </div>
+            return (
+              <Link
+                key={card.href}
+                href={card.href}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: card.bgLight,
+                  borderRadius: "20px",
+                  padding: "28px 16px",
+                  textDecoration: "none",
+                  transition: "all 0.2s ease",
+                  cursor: "pointer",
+                  minHeight: "180px",
+                  width: "100%",
+                  border: `2px solid ${card.color}`,
+                  ...(isLastCard && {
+                    gridColumn: "span 2",
+                    maxWidth: "calc(50% - 8px)",
+                    margin: "0 auto",
+                  })
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-3px)";
+                  e.currentTarget.style.boxShadow = `0 8px 20px -8px ${card.color}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              >
+                {/* Icône avec fond coloré */}
+                <div style={{
+                  width: "70px",
+                  height: "70px",
+                  borderRadius: "35px",
+                  background: card.color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "16px",
+                }}>
+                  <Icon size={36} color={colors.white} strokeWidth={1.5} />
+                </div>
+                
+                {/* Titre coloré */}
+                <div style={{
+                  fontSize: "17px",
+                  fontWeight: 600,
+                  color: card.color,
+                  marginBottom: "6px",
+                  textAlign: "center",
+                }}>
+                  {card.title}
+                </div>
+                
+                {/* Description */}
+                <div style={{
+                  fontSize: "12px",
+                  color: colors.grayText,
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                }}>
+                  {card.description}
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
        
-        {/* Sections */}
-        {sections.map((section, idx) => (
-          <div key={idx} style={{ marginBottom: idx === sections.length - 1 ? 0 : "40px" }}>
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-              marginBottom: "20px",
-              flexWrap: "wrap",
-              gap: "8px",
-            }}>
-              <div>
-                <h2 style={{
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  color: colors.gray800,
-                  marginBottom: "4px",
-                }}>
-                  {section.title}
-                </h2>
-                <p style={{
-                  fontSize: "13px",
-                  color: colors.gray500,
-                }}>
-                  {section.description}
-                </p>
-              </div>
-            </div>
-            
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "20px",
-            }}>
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    style={{
-                      display: "block",
-                      background: colors.white,
-                      borderRadius: "24px",
-                      padding: "24px",
-                      textDecoration: "none",
-                      border: `1px solid ${colors.gray200}`,
-                      transition: "all 0.2s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "translateY(-4px)";
-                      e.currentTarget.style.boxShadow = "0 12px 24px -12px rgba(0,0,0,0.15)";
-                      e.currentTarget.style.borderColor = item.color;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                      e.currentTarget.style.borderColor = colors.gray200;
-                    }}
-                  >
-                    <div style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      marginBottom: "16px",
-                    }}>
-                      <div style={{
-                        width: "48px",
-                        height: "48px",
-                        borderRadius: "16px",
-                        background: `${item.accent}12`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}>
-                        <Icon size={24} color={item.color} />
-                      </div>
-                      <ArrowRight size={18} color={colors.gray400} />
-                    </div>
-                    
-                    <h3 style={{
-                      fontSize: "18px",
-                      fontWeight: 600,
-                      color: colors.gray800,
-                      marginBottom: "8px",
-                    }}>
-                      {item.title}
-                    </h3>
-                    
-                    <p style={{
-                      fontSize: "13px",
-                      color: colors.gray500,
-                      lineHeight: 1.5,
-                    }}>
-                      {item.text}
-                    </p>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-
-        {/* Footer */}
-        <div style={{
-          marginTop: "48px",
-          paddingTop: "24px",
-          borderTop: `1px solid ${colors.gray200}`,
-          textAlign: "center",
-        }}>
-          
-        </div>
       </div>
     </div>
   );
