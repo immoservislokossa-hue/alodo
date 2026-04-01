@@ -4,275 +4,214 @@ import { useState, useEffect } from "react";
 import supabase from "@/src/lib/supabase/browser";
 import {
   TrendingUp,
-  ShoppingBag,
-  HandCoins,
-  CreditCard,
-  Search,
+  TrendingDown,
   Download,
-  RefreshCw,
-  Filter,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  LineChart,
-  Activity,
-  Wallet
+  ArrowRight,
+  Calendar
 } from "lucide-react";
 
 const colors = {
   white: "#FFFFFF",
   deepBlue: "#1a3c6b",
-  deepBlueDark: "#0e2a4a",
   beninGreen: "#008751",
   beninYellow: "#FCD116",
   beninRed: "#E8112D",
+  beninBlue: "#3498db",
+  grayBg: "#F8FAFC",
+  grayBorder: "#E2E8F0",
+  grayLight: "#F1F5F9",
   gray50: "#F9FAFB",
-  gray100: "#F3F4F6",
   gray200: "#E5E7EB",
-  gray300: "#D1D5DB",
-  gray400: "#9CA3AF",
   gray500: "#6B7280",
-  gray600: "#4B5563",
-  gray700: "#374151",
-  gray800: "#1F2937",
+  grayText: "#64748B",
+  grayTitle: "#1E293B",
 };
 
 type Transaction = {
   id: string;
-  type: "vente" | "achat" | "dette" | "paiement";
+  type: "vente" | "achat" | "depense" | "dette" | "paiement";
   montant: number;
   created_at: string;
   profile_id: string;
+  metadata?: any;
 };
 
 type Stats = {
   totalVentes: number;
   totalAchats: number;
-  totalDettes: number;
-  totalPaiements: number;
+  totalDepenses: number;
   balance: number;
   transactionCount: number;
 };
 
-export default function TransactionsDashboard() {
+export default function HistoriquePage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats>({
     totalVentes: 0,
     totalAchats: 0,
-    totalDettes: 0,
-    totalPaiements: 0,
+    totalDepenses: 0,
     balance: 0,
     transactionCount: 0,
   });
-  
-  // Filtres
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: "",
-    end: "",
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  
-  // Graphique
-  const [chartData, setChartData] = useState<{ date: string; montant: number }[]>([]);
+
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 12;
   
   // Récupérer les transactions de l'utilisateur connecté UNIQUEMENT
-  const fetchTransactions = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) throw userError;
-      if (!user) {
-        console.log("Aucun utilisateur connecté");
-        setLoading(false);
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Utilisateur non connecté");
 
-      setCurrentUserId(user.id);
-
-      // Récupérer le profil utilisateur
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
         .single();
 
-      if (profileError || !profile) {
-        console.error("Profil non trouvé");
-        setLoading(false);
-        return;
-      }
+      if (!profile) throw new Error("Profil non trouvé");
 
-      // Récupérer UNIQUEMENT les transactions de ce profil
-      const { data, error } = await supabase
+      // Récupérer les transactions
+      let query = supabase
         .from("boitier_transactions")
         .select("*")
         .eq("profile_id", profile.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erreur Supabase:", error);
-        throw error;
-      }
+      if (dateRange.start) query = query.gte("created_at", dateRange.start);
+      if (dateRange.end) query = query.lte("created_at", `${dateRange.end}T23:59:59`);
 
-      console.log(`📊 Transactions pour ${profile.id}:`, data?.length || 0);
-      setTransactions(data || []);
-      calculateStats(data || []);
-      prepareChartData(data || []);
-    } catch (error) {
-      console.error("Erreur lors de la récupération:", error);
+      const { data: transactionsData } = await query;
+
+      setTransactions(transactionsData || []);
+      calculateStats(transactionsData || []);
+    } catch (err) {
+      console.error("Erreur:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculer les statistiques
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
+
   const calculateStats = (data: Transaction[]) => {
     const ventes = data.filter(t => t.type === "vente").reduce((sum, t) => sum + t.montant, 0);
     const achats = data.filter(t => t.type === "achat").reduce((sum, t) => sum + t.montant, 0);
-    const dettes = data.filter(t => t.type === "dette").reduce((sum, t) => sum + t.montant, 0);
-    const paiements = data.filter(t => t.type === "paiement").reduce((sum, t) => sum + t.montant, 0);
-    
+    const depenses = data.filter(t => t.type === "depense").reduce((sum, t) => sum + t.montant, 0);
+    const totalDepenses = achats + depenses;
+    const balance = ventes - totalDepenses;
+
     setStats({
       totalVentes: ventes,
       totalAchats: achats,
-      totalDettes: dettes,
-      totalPaiements: paiements,
-      balance: ventes - achats - paiements,
+      totalDepenses: totalDepenses,
+      balance: balance,
       transactionCount: data.length,
     });
   };
 
-  // Préparer les données pour le graphique
-  const prepareChartData = (data: Transaction[]) => {
-    const grouped = data.reduce((acc: any, t) => {
-      const date = new Date(t.created_at).toLocaleDateString();
-      if (!acc[date]) acc[date] = 0;
-      if (t.type === "vente") acc[date] += t.montant;
-      if (t.type === "achat" || t.type === "paiement") acc[date] -= t.montant;
-      return acc;
-    }, {});
-    
-    const chart = Object.entries(grouped)
-      .map(([date, montant]) => ({
-        date,
-        montant: montant as number,
-      }))
-      .slice(-7);
-    
-    setChartData(chart);
+  const getPaginatedTransactions = () => {
+    const start = currentPage * itemsPerPage;
+    return transactions.slice(start, start + itemsPerPage);
   };
 
-  // Appliquer les filtres
-  useEffect(() => {
-    let filtered = [...transactions];
-    
-    if (selectedType !== "all") {
-      filtered = filtered.filter(t => t.type === selectedType);
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(t => 
-        t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.montant.toString().includes(searchTerm)
-      );
-    }
-    
-    if (dateRange.start) {
-      filtered = filtered.filter(t => new Date(t.created_at) >= new Date(dateRange.start));
-    }
-    if (dateRange.end) {
-      filtered = filtered.filter(t => new Date(t.created_at) <= new Date(dateRange.end));
-    }
-    
-    setFilteredTransactions(filtered);
-    setCurrentPage(1);
-  }, [transactions, selectedType, searchTerm, dateRange]);
+  const exportData = async (format: "pdf" | "csv") => {
+    if (format === "csv") {
+      const headers = ["Date", "Type", "Montant"];
+      const rows = transactions.map(t => [
+        new Date(t.created_at).toLocaleDateString("fr-FR"),
+        t.type,
+        t.montant,
+      ]);
+      const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `historique_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      try {
+        const html2pdf = (await import("html2pdf.js")).default;
+        const getCurrentDate = () => {
+          const d = new Date();
+          return d.toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+        };
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+        const element = document.createElement("div");
+        element.innerHTML = `
+          <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4; color: #000;">
+            <!-- En-tête -->
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+              <h1 style="margin: 0; font-size: 16px; font-weight: bold;">RAPPORT D'HISTORIQUE COMPLET</h1>
+              <p style="margin: 5px 0; font-size: 10px;">Exercice comptable - ${getCurrentDate()}</p>
+            </div>
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+            <!-- Tableau des transactions -->
+            <div style="margin-bottom: 20px;">
+              <h2 style="font-size: 12px; font-weight: bold; margin: 10px 0 8px 0; border-bottom: 1px solid #000; padding-bottom: 5px;">HISTORIQUE DES TRANSACTIONS</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #000;">
+                    <th style="padding: 6px 4px; text-align: left; border-right: 1px solid #999;">DATE</th>
+                    <th style="padding: 6px 4px; text-align: left; border-right: 1px solid #999;">TYPE</th>
+                    <th style="padding: 6px 4px; text-align: right; border-right: 1px solid #999;">DÉBIT</th>
+                    <th style="padding: 6px 4px; text-align: right;">CRÉDIT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${transactions.map(t => `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                      <td style="padding: 4px 4px; border-right: 1px solid #ddd;">${new Date(t.created_at).toLocaleDateString("fr-FR")}</td>
+                      <td style="padding: 4px 4px; border-right: 1px solid #ddd; text-transform: uppercase;">${t.type}</td>
+                      <td style="padding: 4px 4px; text-align: right; border-right: 1px solid #ddd; font-weight: ${t.type === "vente" || t.type === "paiement" ? "bold" : "normal"};">${t.type === "vente" || t.type === "paiement" ? t.montant.toLocaleString("fr-FR") : "-"}</td>
+                      <td style="padding: 4px 4px; text-align: right; font-weight: ${t.type !== "vente" && t.type !== "paiement" ? "bold" : "normal"};">${t.type !== "vente" && t.type !== "paiement" ? t.montant.toLocaleString("fr-FR") : "-"}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
 
-  const exportPDF = () => {
-    if (typeof window === "undefined") return;
+            <!-- Bilan comptable -->
+            <div style="margin-bottom: 20px; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 12px 0;">
+              <h2 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">BILAN COMPTABLE</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <tr>
+                  <td style="padding: 5px 4px; width: 70%;">TOTAL VENTES (CRÉDIT)</td>
+                  <td style="padding: 5px 4px; text-align: right; border-right: 1px solid #000; font-weight: bold; width: 15%;">${stats.totalVentes.toLocaleString("fr-FR")}</td>
+                  <td style="padding: 5px 4px; width: 15%;"></td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 5px 4px;">TOTAL DÉPENSES (DÉBIT)</td>
+                  <td style="padding: 5px 4px; text-align: right; border-right: 1px solid #000;"></td>
+                  <td style="padding: 5px 4px; text-align: right; font-weight: bold;">${stats.totalDepenses.toLocaleString("fr-FR")}</td>
+                </tr>
+                <tr style="border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                  <td style="padding: 8px 4px; font-weight: bold;">SOLDE NET</td>
+                  <td style="padding: 8px 4px; text-align: right; border-right: 1px solid #000; font-weight: bold;">${stats.balance >= 0 ? stats.balance.toLocaleString("fr-FR") : "-"}</td>
+                  <td style="padding: 8px 4px; text-align: right; font-weight: bold;">${stats.balance < 0 ? Math.abs(stats.balance).toLocaleString("fr-FR") : "-"}</td>
+                </tr>
+              </table>
+            </div>
 
-    const printWindow = window.open("", "_blank", "width=900,height=700");
-    if (!printWindow) return;
-
-    const rows = filteredTransactions
-      .map(
-        (transaction) => `
-          <tr>
-            <td>${transaction.type}</td>
-            <td>${transaction.type === "vente" ? "+" : "-"}${transaction.montant.toLocaleString()} FCFA</td>
-            <td>${new Date(transaction.created_at).toLocaleString()}</td>
-            <td>${transaction.id.slice(0, 8)}...</td>
-          </tr>
-        `
-      )
-      .join("");
-
-    const html = `
-      <!doctype html>
-      <html>
-        <head>
-          <title>Mes Transactions</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 32px; }
-            h1 { color: #1a3c6b; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background: #f5f5f5; }
-          </style>
-        </head>
-        <body>
-          <h1>Mes Transactions</h1>
-          <p>Export du ${new Date().toLocaleString()} - ${filteredTransactions.length} transaction(s)</p>
-          <table>
-            <thead><tr><th>Type</th><th>Montant</th><th>Date</th><th>ID</th></tr></thead>
-            <tbody>${rows || "<tr><td colspan='4'>Aucune transaction</td></tr>"}</tbody>
-          </table>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "vente": return colors.beninGreen;
-      case "achat": return colors.deepBlue;
-      case "dette": return colors.beninYellow;
-      case "paiement": return colors.beninRed;
-      default: return colors.gray500;
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "vente": return <TrendingUp size={16} />;
-      case "achat": return <ShoppingBag size={16} />;
-      case "dette": return <HandCoins size={16} />;
-      case "paiement": return <CreditCard size={16} />;
-      default: return <Activity size={16} />;
+            <!-- Pied de page -->
+            <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #000; font-size: 9px; color: #666;">
+              <p style="margin: 3px 0;">Document généré automatiquement - ${getCurrentDate()}</p>
+              <p style="margin: 3px 0;">Confidentiel - Usage interne uniquement</p>
+            </div>
+          </div>
+        `;
+        await html2pdf().set({ margin: 5, filename: `historique_complet_${new Date().toISOString().split("T")[0]}.pdf` }).from(element).save();
+      } catch (err) {
+        console.error("Erreur PDF:", err);
+        alert("Erreur lors de l'export PDF");
+      }
     }
   };
 
@@ -289,214 +228,242 @@ export default function TransactionsDashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: colors.gray50 }}>
-      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "24px" }}>
-        
+    <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${colors.grayBg} 0%, white 100%)` }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "48px 24px 24px 24px" }}>
         {/* Header */}
-        <div style={{ marginBottom: "32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "16px" }}>
+        <div style={{ marginBottom: "48px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "24px" }}>
             <div>
-              <h1 style={{ fontSize: "28px", fontWeight: 700, color: colors.deepBlue, marginBottom: "8px" }}>
-                                Transactions
+              <h1 style={{ fontSize: "clamp(24px, 5vw, 42px)", fontWeight: 700, color: colors.grayTitle, margin: "0 0 12px 0" }}>
+                Historique Complet
               </h1>
-              <p style={{ color: colors.gray600 }}>Suivi de vos transactions personnelles</p>
-              {currentUserId && (
-                <p style={{ fontSize: "11px", color: colors.gray400, marginTop: "4px" }}>
-                  ✓ Vos transactions uniquement ({transactions.length})
-                </p>
-              )}
+              <p style={{ fontSize: "clamp(14px, 2vw, 16px)", color: colors.grayText, margin: "0" }}>
+                {transactions.length} transaction{transactions.length > 1 ? "s" : ""} chargée{transactions.length > 1 ? "s" : ""}
+              </p>
             </div>
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
               <button
-                onClick={exportPDF}
-                disabled={filteredTransactions.length === 0}
+                onClick={() => exportData("csv")}
+                disabled={transactions.length === 0}
                 style={{
-                  padding: "10px 20px",
+                  padding: "12px 20px",
                   background: colors.white,
-                  border: `1px solid ${colors.gray300}`,
+                  border: `1px solid ${colors.grayBorder}`,
                   borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: filteredTransactions.length === 0 ? "not-allowed" : "pointer",
-                  opacity: filteredTransactions.length === 0 ? 0.5 : 1,
+                  color: colors.grayText,
+                  cursor: transactions.length === 0 ? "not-allowed" : "pointer",
+                  opacity: transactions.length === 0 ? 0.5 : 1,
+                  fontWeight: 500,
+                  transition: "all 0.3s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (transactions.length > 0) {
+                    (e.currentTarget as HTMLButtonElement).style.background = colors.grayLight;
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = colors.grayText;
+                  }
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = colors.white;
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = colors.grayBorder;
                 }}
               >
-                <Download size={18} />
-                Exporter PDF
+                CSV
               </button>
               <button
-                onClick={fetchTransactions}
+                onClick={() => exportData("pdf")}
+                disabled={transactions.length === 0}
                 style={{
-                  padding: "10px 20px",
-                  background: colors.deepBlue,
+                  padding: "12px 20px",
+                  background: colors.beninGreen,
                   border: "none",
                   borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  cursor: "pointer",
                   color: colors.white,
+                  cursor: transactions.length === 0 ? "not-allowed" : "pointer",
+                  opacity: transactions.length === 0 ? 0.5 : 1,
+                  fontWeight: 500,
+                  transition: "all 0.3s ease",
+                }}
+                onMouseOver={(e) => {
+                  if (transactions.length > 0) {
+                    (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+                  }
+                }}
+                onMouseOut={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
                 }}
               >
-                <RefreshCw size={18} />
-                Actualiser
+                PDF du Rapport
               </button>
             </div>
-          </div>
-          
-          <div style={{ display: "flex", gap: "4px" }}>
-            <div style={{ flex: 1, height: "3px", background: colors.beninGreen, borderRadius: "2px" }} />
-            <div style={{ flex: 1, height: "3px", background: colors.beninYellow, borderRadius: "2px" }} />
-            <div style={{ flex: 1, height: "3px", background: colors.beninRed, borderRadius: "2px" }} />
           </div>
         </div>
 
-        {/* Cartes statistiques */}
+        {/* Cartes Statistiques */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "16px",
-          marginBottom: "32px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "20px",
+          marginBottom: "40px",
         }}>
           {[
-            { label: "Ventes", value: stats.totalVentes, icon: TrendingUp, color: colors.beninGreen, prefix: "+" },
-            { label: "Achats", value: stats.totalAchats, icon: ShoppingBag, color: colors.deepBlue, prefix: "-" },
-            { label: "Dettes", value: stats.totalDettes, icon: HandCoins, color: colors.beninYellow, prefix: "" },
-            { label: "Paiements", value: stats.totalPaiements, icon: CreditCard, color: colors.beninRed, prefix: "-" },
-            { label: "Solde", value: stats.balance, icon: Wallet, color: stats.balance >= 0 ? colors.beninGreen : colors.beninRed, prefix: "" },
-            { label: "Nb transactions", value: stats.transactionCount, icon: Activity, color: colors.gray600, prefix: "" },
+            { label: "Ventes Totales", value: stats.totalVentes, icon: TrendingDown, color: colors.beninGreen },
+            { label: "Dépenses Totales", value: stats.totalDepenses, icon: Calendar, color: colors.beninRed },
+            { label: "Solde Net", value: stats.balance, icon: ArrowRight, color: stats.balance >= 0 ? colors.beninGreen : colors.beninRed },
           ].map((stat) => (
             <div key={stat.label} style={{
               background: colors.white,
-              padding: "20px",
-              borderRadius: "20px",
-              border: `1px solid ${colors.gray200}`,
-            }}>
-              <stat.icon size={20} color={stat.color} style={{ marginBottom: "12px" }} />
-              <div style={{ fontSize: "24px", fontWeight: 700, color: stat.color }}>
-                {stat.prefix}{stat.value.toLocaleString()} {stat.label !== "Nb transactions" && "FCFA"}
+              padding: "28px",
+              borderRadius: "16px",
+              border: `1px solid ${colors.grayBorder}`,
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              cursor: "pointer",
+            }}
+            onMouseOver={(e) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.style.transform = "translateY(-8px)";
+              el.style.borderColor = stat.color;
+              el.style.boxShadow = `0 12px 24px ${stat.color}15`;
+            }}
+            onMouseOut={(e) => {
+              const el = e.currentTarget as HTMLDivElement;
+              el.style.transform = "translateY(0)";
+              el.style.borderColor = colors.grayBorder;
+              el.style.boxShadow = "none";
+            }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                <div style={{
+                  width: "64px",
+                  height: "64px",
+                  borderRadius: "12px",
+                  background: `${stat.color}15`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  <stat.icon size={28} color={stat.color} />
+                </div>
+                <span style={{ fontSize: "14px", color: colors.grayText, fontWeight: 500 }}>{stat.label}</span>
               </div>
-              <div style={{ fontSize: "12px", color: colors.gray500 }}>{stat.label}</div>
+              <div style={{ fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 700, color: stat.color }}>
+                {stat.value.toLocaleString("fr-FR")}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Graphique */}
-        {chartData.length > 0 && (
-          <div style={{
-            background: colors.white,
-            borderRadius: "20px",
-            padding: "24px",
-            marginBottom: "32px",
-            border: `1px solid ${colors.gray200}`,
-          }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 600, color: colors.deepBlue, marginBottom: "20px" }}>Évolution</h2>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "150px" }}>
-              {chartData.map((item, i) => {
-                const maxMontant = Math.max(...chartData.map(d => Math.abs(d.montant)), 1);
-                const height = (Math.abs(item.montant) / maxMontant) * 120;
-                return (
-                  <div key={i} style={{ flex: 1, textAlign: "center" }}>
-                    <div style={{ height: `${height}px`, background: item.montant >= 0 ? colors.beninGreen : colors.beninRed, borderRadius: "4px 4px 0 0", opacity: 0.7 }} />
-                    <div style={{ fontSize: "10px", marginTop: "8px", color: colors.gray500 }}>{item.date.slice(0, 5)}</div>
-                  </div>
-                );
-              })}
+        {/* Section Filtres */}
+        <div style={{
+          background: colors.white,
+          borderRadius: "16px",
+          padding: "24px",
+          marginBottom: "32px",
+          border: `1px solid ${colors.grayBorder}`,
+        }}>
+          <h3 style={{ fontSize: "16px", fontWeight: 600, color: colors.grayTitle, marginBottom: "16px", margin: "0 0 16px 0" }}>
+            Filtrer par Période
+          </h3>
+          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: "150px" }}>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: `1px solid ${colors.grayBorder}`,
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  transition: "all 0.2s ease",
+                }}
+              />
             </div>
-          </div>
-        )}
-
-        {/* Filtres */}
-        <div style={{ background: colors.white, borderRadius: "20px", padding: "20px", marginBottom: "24px", border: `1px solid ${colors.gray200}` }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Filter size={18} />
-              <span>Filtres</span>
+            <div style={{ flex: 1, minWidth: "150px" }}>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: `1px solid ${colors.grayBorder}`,
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  transition: "all 0.2s ease",
+                }}
+              />
             </div>
-            <button onClick={() => setShowFilters(!showFilters)} style={{ background: "none", border: "none", cursor: "pointer" }}>
-              {showFilters ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-            </button>
-          </div>
-          
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-            <div style={{ flex: 1, minWidth: "200px" }}>
-              <div style={{ position: "relative" }}>
-                <Search size={16} style={{ position: "absolute", left: "12px", top: "12px", color: colors.gray400 }} />
-                <input
-                  type="text"
-                  placeholder="Rechercher..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px 10px 36px", border: `1px solid ${colors.gray300}`, borderRadius: "12px" }}
-                />
-              </div>
-            </div>
-            
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              style={{ padding: "10px 16px", border: `1px solid ${colors.gray300}`, borderRadius: "12px", background: colors.white }}
-            >
-              <option value="all">Tous les types</option>
-              <option value="vente">Ventes</option>
-              <option value="achat">Achats</option>
-              <option value="dette">Dettes</option>
-              <option value="paiement">Paiements</option>
-            </select>
-            
-            {showFilters && (
-              <>
-                <input type="date" value={dateRange.start} onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })} style={{ padding: "10px 16px", border: `1px solid ${colors.gray300}`, borderRadius: "12px" }} />
-                <input type="date" value={dateRange.end} onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })} style={{ padding: "10px 16px", border: `1px solid ${colors.gray300}`, borderRadius: "12px" }} />
-                {(dateRange.start || dateRange.end) && (
-                  <button onClick={() => setDateRange({ start: "", end: "" })} style={{ padding: "10px 16px", background: colors.gray100, border: "none", borderRadius: "12px", cursor: "pointer" }}>
-                    <X size={14} /> Effacer
-                  </button>
-                )}
-              </>
+            {(dateRange.start || dateRange.end) && (
+              <button
+                onClick={() => setDateRange({ start: "", end: "" })}
+                style={{
+                  padding: "10px 16px",
+                  background: colors.grayLight,
+                  border: `1px solid ${colors.grayBorder}`,
+                  borderRadius: "8px",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  fontWeight: 500,
+                }}
+              >
+                Réinitialiser
+              </button>
             )}
           </div>
         </div>
 
-        {/* Tableau */}
-        <div style={{ background: colors.white, borderRadius: "20px", overflow: "hidden", border: `1px solid ${colors.gray200}` }}>
+        {/* Tableau des Transactions */}
+        <div style={{
+          background: colors.white,
+          borderRadius: "16px",
+          overflow: "hidden",
+          border: `1px solid ${colors.grayBorder}`,
+          marginBottom: "32px",
+        }}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ background: colors.gray50 }}>
-                <tr>
-                  <th style={{ padding: "16px", textAlign: "left" }}>Type</th>
-                  <th style={{ padding: "16px", textAlign: "right" }}>Montant</th>
-                  <th style={{ padding: "16px", textAlign: "left" }}>Date</th>
-                  <th style={{ padding: "16px", textAlign: "left" }}>ID</th>
+              <thead>
+                <tr style={{ background: colors.grayLight, borderBottom: `2px solid ${colors.grayBorder}` }}>
+                  <th style={{ padding: "16px", textAlign: "left", fontWeight: 600, color: colors.grayText, fontSize: "13px" }}>DATE</th>
+                  <th style={{ padding: "16px", textAlign: "left", fontWeight: 600, color: colors.grayText, fontSize: "13px" }}>TYPE</th>
+                  <th style={{ padding: "16px", textAlign: "right", fontWeight: 600, color: colors.grayText, fontSize: "13px" }}>DÉBIT</th>
+                  <th style={{ padding: "16px", textAlign: "right", fontWeight: 600, color: colors.grayText, fontSize: "13px" }}>CRÉDIT</th>
                 </tr>
               </thead>
               <tbody>
-                {currentItems.length === 0 ? (
+                {getPaginatedTransactions().length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ padding: "48px", textAlign: "center", color: colors.gray400 }}>
+                    <td colSpan={4} style={{ padding: "40px", textAlign: "center", color: colors.grayText }}>
                       Aucune transaction trouvée
                     </td>
                   </tr>
                 ) : (
-                  currentItems.map((t) => (
-                    <tr key={t.id} style={{ borderBottom: `1px solid ${colors.gray100}` }}>
-                      <td style={{ padding: "16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: `${getTypeColor(t.type)}15`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {getTypeIcon(t.type)}
-                          </div>
-                          <span style={{ textTransform: "capitalize", color: getTypeColor(t.type) }}>{t.type}</span>
-                        </div>
+                  getPaginatedTransactions().map((t) => (
+                    <tr key={t.id} style={{ borderBottom: `1px solid ${colors.grayBorder}` }}>
+                      <td style={{ padding: "16px", fontSize: "14px", color: colors.grayText }}>
+                        {new Date(t.created_at).toLocaleDateString("fr-FR")}
                       </td>
-                      <td style={{ padding: "16px", textAlign: "right", fontWeight: 600, color: t.type === "vente" ? colors.beninGreen : colors.deepBlue }}>
-                        {t.type === "vente" ? "+" : "-"}{t.montant.toLocaleString()} FCFA
+                      <td style={{ padding: "16px", fontSize: "14px", textTransform: "uppercase", fontWeight: 600, color: colors.grayTitle }}>
+                        {t.type}
                       </td>
-                      <td style={{ padding: "16px", fontSize: "13px", color: colors.gray600 }}>
-                        {new Date(t.created_at).toLocaleString()}
+                      <td style={{
+                        padding: "16px",
+                        fontSize: "14px",
+                        textAlign: "right",
+                        fontWeight: 600,
+                        color: ["vente", "paiement"].includes(t.type) ? colors.grayText : colors.beninRed,
+                      }}>
+                        {["vente", "paiement"].includes(t.type) ? "-" : t.montant.toLocaleString("fr-FR")}
                       </td>
-                      <td style={{ padding: "16px", fontSize: "12px", color: colors.gray400, fontFamily: "monospace" }}>
-                        {t.id.slice(0, 8)}...
+                      <td style={{
+                        padding: "16px",
+                        fontSize: "14px",
+                        textAlign: "right",
+                        fontWeight: 600,
+                        color: ["vente", "paiement"].includes(t.type) ? colors.beninGreen : colors.grayText,
+                      }}>
+                        {["vente", "paiement"].includes(t.type) ? t.montant.toLocaleString("fr-FR") : "-"}
                       </td>
                     </tr>
                   ))
@@ -504,20 +471,98 @@ export default function TransactionsDashboard() {
               </tbody>
             </table>
           </div>
-          
-          {filteredTransactions.length > 0 && (
-            <div style={{ padding: "16px", borderTop: `1px solid ${colors.gray200}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-              <span style={{ fontSize: "12px", color: colors.gray500 }}>
-                {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredTransactions.length)} sur {filteredTransactions.length}
+
+          {/* Pagination */}
+          {transactions.length > itemsPerPage && (
+            <div style={{
+              padding: "16px 24px",
+              borderTop: `1px solid ${colors.grayBorder}`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "16px",
+              background: colors.grayLight,
+            }}>
+              <span style={{ fontSize: "13px", color: colors.grayText }}>
+                Page {currentPage + 1} de {Math.ceil(transactions.length / itemsPerPage)}
               </span>
               <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: "6px 12px", border: `1px solid ${colors.gray300}`, borderRadius: "8px", background: colors.white, cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}>Précédent</button>
-                <span style={{ padding: "6px 12px" }}>Page {currentPage} / {totalPages}</span>
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: "6px 12px", border: `1px solid ${colors.gray300}`, borderRadius: "8px", background: colors.white, cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}>Suivant</button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                  disabled={currentPage === 0}
+                  style={{
+                    padding: "8px 12px",
+                    border: `1px solid ${colors.grayBorder}`,
+                    borderRadius: "6px",
+                    background: currentPage === 0 ? colors.grayLight : colors.white,
+                    cursor: currentPage === 0 ? "not-allowed" : "pointer",
+                    opacity: currentPage === 0 ? 0.5 : 1,
+                    fontSize: "13px",
+                    fontWeight: 500,
+                  }}
+                >
+                  ← Précédent
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(transactions.length / itemsPerPage) - 1, p + 1))}
+                  disabled={currentPage >= Math.ceil(transactions.length / itemsPerPage) - 1}
+                  style={{
+                    padding: "8px 12px",
+                    border: `1px solid ${colors.grayBorder}`,
+                    borderRadius: "6px",
+                    background: currentPage >= Math.ceil(transactions.length / itemsPerPage) - 1 ? colors.grayLight : colors.white,
+                    cursor: currentPage >= Math.ceil(transactions.length / itemsPerPage) - 1 ? "not-allowed" : "pointer",
+                    opacity: currentPage >= Math.ceil(transactions.length / itemsPerPage) - 1 ? 0.5 : 1,
+                    fontSize: "13px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Suivant →
+                </button>
               </div>
             </div>
           )}
         </div>
+
+
+
+        {/* Loading State */}
+        {loading && (
+          <div style={{
+            position: "fixed",
+            inset: "0",
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+          }}>
+            <div style={{
+              background: colors.white,
+              padding: "32px",
+              borderRadius: "16px",
+              textAlign: "center",
+            }}>
+              <div style={{ fontSize: "16px", color: colors.grayText, marginBottom: "16px" }}>
+                Chargement des données...
+              </div>
+              <div style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                border: `3px solid ${colors.grayLight}`,
+                borderTop: `3px solid ${colors.beninGreen}`,
+                animation: "spin 1s linear infinite",
+              }} />
+            </div>
+            <style>{`
+              @keyframes spin {
+                to { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
+        )}
       </div>
     </div>
   );

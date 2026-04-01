@@ -170,7 +170,7 @@ export default function Navbar() {
       background: scrolled ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.92)", 
       backdropFilter: "blur(20px)", borderBottom: `1px solid ${colors.gray200}`,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      paddingLeft: 24, paddingRight: 24, zIndex: 50
+      paddingLeft: 24, paddingRight: 24, zIndex: 50, padding: "20px"
     }}>
       {/* Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => router.push(profile?.type === "vendeur" ? "/vendeur" : "/prestataire")}>
@@ -240,6 +240,9 @@ export default function Navbar() {
           <span style={{ fontSize: 14, fontWeight: 500, color: colors.beninRed }}>Déconnexion</span>
         </button>
       </nav>
+
+
+      
     </header>
   );
 }

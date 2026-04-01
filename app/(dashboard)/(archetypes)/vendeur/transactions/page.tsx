@@ -17,7 +17,8 @@ import {
   Plus,
   Minus,
   Calculator,
-  Save
+  Save,
+  Download
 } from "lucide-react";
 
 const colors = {
@@ -50,7 +51,6 @@ type TransactionType = "vente" | "achat" | "depense" | "dette" | "paiement";
 
 const transactionTypes = [
   { id: "vente", label: "Vente", icon: TrendingUp, color: colors.beninGreen, bgColor: `${colors.beninGreen}10`, type: "positive" },
-  { id: "achat", label: "Achat", icon: TrendingDown, color: colors.deepBlue, bgColor: `${colors.deepBlue}10`, type: "negative" },
   { id: "depense", label: "Dépense", icon: Minus, color: colors.beninRed, bgColor: `${colors.beninRed}10`, type: "negative" },
   { id: "dette", label: "Dette", icon: HandCoins, color: colors.beninYellow, bgColor: `${colors.beninYellow}10`, type: "neutral" },
   { id: "paiement", label: "Paiement", icon: CreditCard, color: colors.deepBlue, bgColor: `${colors.deepBlue}10`, type: "negative" },
@@ -74,10 +74,11 @@ export default function TransactionsPage() {
   });
 
   const [selectedProduit, setSelectedProduit] = useState<Produit | null>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
 
-  // Charger les produits
+  // Charger les produits et transactions
   useEffect(() => {
-    const fetchProduits = async () => {
+    const fetchData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
@@ -90,19 +91,28 @@ export default function TransactionsPage() {
 
         if (!profile) return;
 
-        const { data } = await supabase
+        const { data: produitsData } = await supabase
           .from("produits")
           .select("*")
           .eq("profile_id", profile.id)
           .order("nom");
 
-        setProduits(data || []);
+        setProduits(produitsData || []);
+
+        const { data: transactionsData } = await supabase
+          .from("transactions")
+          .select("*")
+          .eq("profile_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        setTransactions(transactionsData || []);
       } catch (err) {
-        console.error("Erreur chargement produits:", err);
+        console.error("Erreur chargement données:", err);
       }
     };
 
-    fetchProduits();
+    fetchData();
   }, []);
 
   // Mettre à jour le produit sélectionné
@@ -589,7 +599,7 @@ export default function TransactionsPage() {
               }}
             >
               <Save size={18} />
-              {loading ? "Enregistrement..." : `Enregistrer ${currentTypeConfig?.label}`}
+              {loading ? "Enregistrement..." : "Enregistrer et générer une facture"}
             </button>
           </div>
         </form>
@@ -699,6 +709,121 @@ export default function TransactionsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Facture et historique */}
+        {transactions.length > 0 && (
+          <div style={{
+            marginTop: "32px",
+            background: colors.white,
+            borderRadius: "20px",
+            padding: "24px",
+            border: `1px solid ${colors.gray200}`,
+          }}>
+            <h3 style={{ fontSize: "18px", fontWeight: 700, color: colors.gray800, marginBottom: "20px" }}>
+              📋 Dernières transactions
+            </h3>
+            
+            <div id="facture-content" style={{
+              background: colors.white,
+              padding: "24px",
+              borderRadius: "12px",
+              border: `2px solid ${colors.gray200}`,
+              marginBottom: "20px",
+              fontFamily: "Arial, sans-serif",
+            }}>
+              <div style={{ borderBottom: `2px solid ${colors.gray300}`, paddingBottom: "16px", marginBottom: "16px" }}>
+                <div style={{ fontSize: "24px", fontWeight: "bold", color: colors.deepBlue, marginBottom: "8px" }}>📄 FACTURE</div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: colors.gray600 }}>
+                  <div>Date: {new Date().toLocaleDateString("fr-FR")}</div>
+                  <div>Numéro: #{Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
+                </div>
+              </div>
+
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ background: colors.gray100, borderBottom: `1px solid ${colors.gray300}` }}>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: "600", color: colors.gray700 }}>Type</th>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: "600", color: colors.gray700 }}>Montant</th>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: "600", color: colors.gray700 }}>Quantité</th>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: "600", color: colors.gray700 }}>Client</th>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: "600", color: colors.gray700 }}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.slice(0, 5).map((trans, idx) => {
+                    const transType = transactionTypes.find(t => t.id === trans.type);
+                    const quantity = trans.metadata?.quantite || 1;
+                    const clientName = trans.metadata?.nom_client || "—";
+                    return (
+                      <tr key={idx} style={{ borderBottom: `1px solid ${colors.gray200}` }}>
+                        <td style={{ padding: "10px", color: transType?.color }}>{transType?.label || trans.type}</td>
+                        <td style={{ padding: "10px", fontWeight: "600", color: colors.deepBlue }}>{trans.montant.toLocaleString()} FCFA</td>
+                        <td style={{ padding: "10px" }}>{quantity}</td>
+                        <td style={{ padding: "10px" }}>{clientName}</td>
+                        <td style={{ padding: "10px", color: colors.gray600 }}>{new Date(trans.created_at).toLocaleDateString("fr-FR")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "20px", paddingTop: "16px", borderTop: `2px solid ${colors.gray300}`, marginTop: "16px" }}>
+                <div>
+                  <div style={{ fontSize: "12px", color: colors.gray600 }}>TOTAL</div>
+                  <div style={{ fontSize: "20px", fontWeight: "bold", color: colors.beninGreen }}>
+                    {transactions.slice(0, 5).reduce((sum, t) => sum + (t.montant || 0), 0).toLocaleString()} FCFA
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: `1px solid ${colors.gray200}`, textAlign: "center", fontSize: "11px", color: colors.gray500 }}>
+                <div>Alodo • Plateforme de commerce et de services</div>
+                <div>Généré le {new Date().toLocaleString("fr-FR")}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={async () => {
+                try {
+                  const html2pdf = (await import('html2pdf.js')).default;
+                  const element = document.getElementById('facture-content');
+                  if (!element) return;
+
+                  const opt = {
+                    margin: 10,
+                    filename: `facture_${new Date().toISOString().split('T')[0]}.pdf`,
+                    image: { type: "png" as const, quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { orientation: 'portrait' as const, unit: 'mm', format: 'a4' }
+                  };
+                  html2pdf().set(opt).from(element).save();
+                } catch (err) {
+                  console.error('Erreur génération PDF:', err);
+                  alert('Erreur lors du téléchargement du PDF');
+                }
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "12px 24px",
+                background: colors.beninGreen,
+                color: colors.white,
+                border: "none",
+                borderRadius: "12px",
+                fontSize: "15px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = "0.9"}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+            >
+              <Download size={18} />
+              Télécharger en PDF
+            </button>
           </div>
         )}
       </div>

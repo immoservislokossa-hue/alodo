@@ -18,12 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ 
         margin: 0, 
         padding: 0,
-        paddingBottom: "80px", // Ajout du padding bas pour la navbar mobile
       }}>
-        <div style={{
-          minHeight: "100vh",
-          paddingBottom: "80px", // Padding supplémentaire
-        }}>
+        <div className="app-content">
           {children}
         </div>
         <Navbar />

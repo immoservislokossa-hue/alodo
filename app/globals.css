@@ -108,6 +108,20 @@ body {
   overflow-x: hidden;
 }
 
+/* App Content Layout */
+.app-content {
+  min-height: 100vh;
+  padding-top: 70px;
+  padding-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    padding-top: 0;
+    padding-bottom: 80px;
+  }
+}
+
 /* Typographie personnalisée améliorée */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-playfair);
