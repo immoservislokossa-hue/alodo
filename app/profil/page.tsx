@@ -19,28 +19,38 @@ import {
   Layers,
   Settings,
   FileText,
+  User,
+  Mail,
+  Shield,
+  ChevronRight,
+  Building2
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+// Couleurs du branding Alɔdó
 const colors = {
-  white: "#ffffff",
-  ink: "#1e2a3a",
-  deepBlue: "#1e3a5f",
-  deepBlueDark: "#0a2a44",
-  beninGreen: "#2e7d32",
-  beninYellow: "#f9a825",
-  beninRed: "#c62828",
-  softGreen: "#e8f5e9",
-  softBlue: "#e3f2fd",
-  softYellow: "#fff8e1",
-  softRed: "#ffebee",
-  gray50: "#fafafa",
-  gray100: "#f5f5f5",
-  gray200: "#eeeeee",
-  gray300: "#e0e0e0",
-  gray500: "#9e9e9e",
-  gray700: "#616161",
+  white: "#FFFFFF",
+  deepBlue: "#1a3c6b",
+  deepBlueDark: "#0e2a4a",
+  deepBlueLight: "#2c4e7e",
+  beninGreen: "#008751",
+  beninYellow: "#FCD116",
+  beninRed: "#E8112D",
+  softGreen: "#E8F5E9",
+  softBlue: "#EFF6FF",
+  softYellow: "#FFF9E6",
+  softRed: "#FFEBEE",
+  gray50: "#F9FAFB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+  gray300: "#D1D5DB",
+  gray400: "#9CA3AF",
+  gray500: "#6B7280",
+  gray600: "#4B5563",
+  gray700: "#374151",
+  gray800: "#1F2937",
+  gray900: "#111827",
 };
 
 type UserRole = "vendeur" | "prestataire" | "simple" | "institution" | null;
@@ -51,6 +61,7 @@ interface NavLink {
   icon: React.ElementType;
   description?: string;
   color: string;
+  bgColor: string;
 }
 
 interface NavSection {
@@ -63,6 +74,7 @@ export default function ProfilPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [role, setRole] = useState<UserRole>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,11 +90,12 @@ export default function ProfilPage() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("type_profile")
+          .select("*")
           .eq("user_id", user.id)
           .single();
 
         if (profile) {
+          setProfile(profile);
           setRole(profile.type_profile as UserRole);
         }
       } catch (error) {
@@ -100,17 +113,52 @@ export default function ProfilPage() {
       title: "Découverte",
       icon: Play,
       links: [
-        { label: "Accueil", href: "/", icon: Home, description: "Retour à l'accueil", color: colors.beninGreen },
-        { label: "Démo USSD", href: "/demo", icon: Play, description: "Essayer le système", color: colors.beninYellow },
-        { label: "Assistant IA", href: "/formalisation", icon: MessageSquare, description: "Aide à la formalisation", color: colors.deepBlue },
+        { 
+          label: "Accueil", 
+          href: "/", 
+          icon: Home, 
+          description: "Retour à l'accueil", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
+        { 
+          label: "Démo USSD", 
+          href: "/demo", 
+          icon: Play, 
+          description: "Essayer le système", 
+          color: colors.beninYellow,
+          bgColor: `${colors.beninYellow}10`
+        },
+        { 
+          label: "Assistant IA", 
+          href: "/formalisation", 
+          icon: MessageSquare, 
+          description: "Aide à la formalisation", 
+          color: colors.deepBlue,
+          bgColor: `${colors.deepBlue}10`
+        },
       ],
     },
     {
       title: "Opportunités & Finances",
       icon: TrendingUp,
       links: [
-        { label: "Opportunités", href: "/opportunites", icon: TrendingUp, description: "Explorer les offres", color: colors.beninGreen },
-        { label: "Portefeuille", href: "/wallet", icon: Wallet, description: "Gérer vos moyens", color: colors.beninYellow },
+        { 
+          label: "Opportunités", 
+          href: "/opportunites", 
+          icon: TrendingUp, 
+          description: "Explorer les offres", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
+        { 
+          label: "Portefeuille", 
+          href: "/wallet", 
+          icon: Wallet, 
+          description: "Gérer vos moyens", 
+          color: colors.beninYellow,
+          bgColor: `${colors.beninYellow}10`
+        },
       ],
     },
   ];
@@ -120,10 +168,38 @@ export default function ProfilPage() {
       title: "Gestion Vendeur",
       icon: Store,
       links: [
-        { label: "Tableau de bord", href: "/vendeur", icon: BarChart3, description: "Vue d'ensemble", color: colors.beninGreen },
-        { label: "Produits", href: "/vendeur/produits", icon: Package, description: "Gérer vos produits", color: colors.beninYellow },
-        { label: "Transactions", href: "/vendeur/transactions", icon: CreditCard, description: "Historique de vente", color: colors.beninRed },
-        { label: "Rapports", href: "/vendeur/rapports", icon: BarChart3, description: "Analyses financières", color: colors.deepBlue },
+        { 
+          label: "Tableau de bord", 
+          href: "/vendeur", 
+          icon: BarChart3, 
+          description: "Vue d'ensemble", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
+        { 
+          label: "Produits", 
+          href: "/vendeur/produits", 
+          icon: Package, 
+          description: "Gérer vos produits", 
+          color: colors.beninYellow,
+          bgColor: `${colors.beninYellow}10`
+        },
+        { 
+          label: "Transactions", 
+          href: "/vendeur/transactions", 
+          icon: CreditCard, 
+          description: "Historique de vente", 
+          color: colors.beninRed,
+          bgColor: `${colors.beninRed}10`
+        },
+        { 
+          label: "Rapports", 
+          href: "/vendeur/rapports", 
+          icon: BarChart3, 
+          description: "Analyses financières", 
+          color: colors.deepBlue,
+          bgColor: `${colors.deepBlue}10`
+        },
       ],
     },
   ];
@@ -133,11 +209,46 @@ export default function ProfilPage() {
       title: "Gestion Prestataire",
       icon: Briefcase,
       links: [
-        { label: "Tableau de bord", href: "/prestataire", icon: BarChart3, description: "Vue d'ensemble", color: colors.beninGreen },
-        { label: "Projets", href: "/prestataire/projets", icon: FolderOpen, description: "Vos projets", color: colors.beninYellow },
-        { label: "Documents", href: "/prestataire/documents", icon: FileText, description: "Gestion documentaire", color: colors.beninRed },
-        { label: "Transactions", href: "/prestataire/transactions", icon: CreditCard, description: "Historique des paiements", color: colors.deepBlue },
-        { label: "Historique", href: "/prestataire/historique", icon: Calendar, description: "Activités passées", color: colors.gray700 },
+        { 
+          label: "Tableau de bord", 
+          href: "/prestataire", 
+          icon: BarChart3, 
+          description: "Vue d'ensemble", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
+        { 
+          label: "Projets", 
+          href: "/prestataire/projets", 
+          icon: FolderOpen, 
+          description: "Vos projets", 
+          color: colors.beninYellow,
+          bgColor: `${colors.beninYellow}10`
+        },
+        { 
+          label: "Documents", 
+          href: "/prestataire/documents", 
+          icon: FileText, 
+          description: "Gestion documentaire", 
+          color: colors.beninRed,
+          bgColor: `${colors.beninRed}10`
+        },
+        { 
+          label: "Transactions", 
+          href: "/prestataire/transactions", 
+          icon: CreditCard, 
+          description: "Historique des paiements", 
+          color: colors.deepBlue,
+          bgColor: `${colors.deepBlue}10`
+        },
+        { 
+          label: "Historique", 
+          href: "/prestataire/historique", 
+          icon: Calendar, 
+          description: "Activités passées", 
+          color: colors.gray600,
+          bgColor: `${colors.gray600}10`
+        },
       ],
     },
   ];
@@ -147,9 +258,30 @@ export default function ProfilPage() {
       title: "Tableau Simple",
       icon: Layers,
       links: [
-        { label: "Tableau de bord", href: "/simple", icon: BarChart3, description: "Vue simplifiée", color: colors.beninGreen },
-        { label: "Boîtier", href: "/simple/boitier", icon: Settings, description: "Personnalisation", color: colors.beninYellow },
-        { label: "Historique", href: "/simple/historique", icon: Calendar, description: "Votre historique", color: colors.beninRed },
+        { 
+          label: "Tableau de bord", 
+          href: "/simple", 
+          icon: BarChart3, 
+          description: "Vue simplifiée", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
+        { 
+          label: "Boîtier", 
+          href: "/simple/boitier", 
+          icon: Settings, 
+          description: "Calculatrice et transactions", 
+          color: colors.beninYellow,
+          bgColor: `${colors.beninYellow}10`
+        },
+        { 
+          label: "Historique", 
+          href: "/simple/historique", 
+          icon: Calendar, 
+          description: "Votre historique", 
+          color: colors.beninRed,
+          bgColor: `${colors.beninRed}10`
+        },
       ],
     },
   ];
@@ -157,11 +289,32 @@ export default function ProfilPage() {
   const institutionSections: NavSection[] = [
     {
       title: "Gestion Institution",
-      icon: Store,
+      icon: Building2,
       links: [
-        { label: "Tableau de bord", href: "/institutions", icon: BarChart3, description: "Vue d'ensemble", color: colors.beninGreen },
-        { label: "Dashboard", href: "/institutions/dashboard", icon: BarChart3, description: "Analyse détaillée", color: colors.beninYellow },
-        { label: "Finance", href: "/institutions/dashboard/finance", icon: CreditCard, description: "Gestion financière", color: colors.beninRed },
+        { 
+          label: "Tableau de bord", 
+          href: "/institutions", 
+          icon: BarChart3, 
+          description: "Vue d'ensemble", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
+        { 
+          label: "Dashboard", 
+          href: "/institutions/dashboard", 
+          icon: BarChart3, 
+          description: "Analyse détaillée", 
+          color: colors.beninYellow,
+          bgColor: `${colors.beninYellow}10`
+        },
+        { 
+          label: "Finance", 
+          href: "/institutions/dashboard/finance", 
+          icon: CreditCard, 
+          description: "Gestion financière", 
+          color: colors.beninRed,
+          bgColor: `${colors.beninRed}10`
+        },
       ],
     },
   ];
@@ -184,6 +337,16 @@ export default function ProfilPage() {
 
   const sections = getSections();
 
+  const getRoleLabel = (roleValue: UserRole) => {
+    switch (roleValue) {
+      case "vendeur": return "Vendeur";
+      case "prestataire": return "Prestataire de services";
+      case "simple": return "Mode simple";
+      case "institution": return "Institution financière";
+      default: return "Utilisateur";
+    }
+  };
+
   if (loading) {
     return (
       <div style={{
@@ -191,12 +354,25 @@ export default function ProfilPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: colors.gray100,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        background: colors.white,
+        fontFamily: "system-ui, -apple-system, sans-serif",
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "32px", marginBottom: "16px" }}>Alodo</div>
-          <div style={{ color: colors.gray700, fontSize: "14px" }}>Chargement...</div>
+          <div style={{ 
+            width: 48, 
+            height: 48, 
+            border: `3px solid ${colors.gray200}`,
+            borderTopColor: colors.deepBlue,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+            margin: "0 auto 16px",
+          }} />
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+          <div style={{ color: colors.gray500 }}>Chargement de votre profil...</div>
         </div>
       </div>
     );
@@ -206,46 +382,69 @@ export default function ProfilPage() {
     <div
       style={{
         minHeight: "100vh",
-        background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.beninGreen} 100%)`,
-        padding: "16px",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        paddingTop: "80px",
+        background: colors.white,
+        padding: "24px",
+        fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
-      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+      {/* Barre tricolore béninoise */}
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "4px",
+        display: "flex",
+        zIndex: 50,
+      }}>
+        <div style={{ flex: 1, background: colors.beninGreen }} />
+        <div style={{ flex: 1, background: colors.beninYellow }} />
+        <div style={{ flex: 1, background: colors.beninRed }} />
+      </div>
+
+      <div style={{ maxWidth: "1000px", margin: "0 auto", paddingTop: "24px" }}>
         {/* Header Card */}
         <div
           style={{
-            backgroundColor: colors.white,
-            borderRadius: "16px",
+            background: colors.white,
+            borderRadius: "24px",
             padding: "32px",
             marginBottom: "32px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.12)",
+            boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
+            border: `1px solid ${colors.gray200}`,
           }}
         >
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", marginBottom: "24px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "24px", flexWrap: "wrap" }}>
             <div
               style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "12px",
-                background: `linear-gradient(135deg, ${colors.beninGreen}, ${colors.beninYellow})`,
+                width: "88px",
+                height: "88px",
+                borderRadius: "24px",
+                background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: colors.white,
-                fontSize: "32px",
+                fontSize: "36px",
                 flexShrink: 0,
+                boxShadow: "0 4px 12px rgba(26, 60, 107, 0.15)",
               }}
             >
-              <Layers size={40} />
+              <User size={44} />
             </div>
             <div style={{ flex: 1 }}>
-              <h1 style={{ margin: "0 0 8px 0", fontSize: "28px", fontWeight: 700, color: colors.ink }}>
+              <h1 style={{
+                margin: "0 0 8px 0",
+                fontSize: "28px",
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                color: colors.deepBlue,
+                letterSpacing: "-0.02em",
+              }}>
                 {user?.user_metadata?.name || user?.email?.split("@")[0] || "Utilisateur"}
               </h1>
-              <p style={{ margin: "0 0 16px 0", color: colors.gray700, fontSize: "16px" }}>
-                {role ? `Profil ${role.charAt(0).toUpperCase() + role.slice(1)}` : "Profil standard"}
+              <p style={{ margin: "0 0 20px 0", color: colors.gray500, fontSize: "15px" }}>
+                {getRoleLabel(role)}
               </p>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -255,17 +454,16 @@ export default function ProfilPage() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "8px",
-                      padding: "8px 16px",
-                      backgroundColor: colors.softGreen,
+                      padding: "6px 14px",
+                      background: `${colors.beninGreen}10`,
                       color: colors.beninGreen,
-                      borderRadius: "8px",
-                      fontSize: "13px",
+                      borderRadius: "20px",
+                      fontSize: "12px",
                       fontWeight: 600,
-                      border: `1px solid ${colors.beninGreen}30`,
                     }}
                   >
-                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: colors.beninGreen }} />
-                    {role.toUpperCase()}
+                    <Shield size={14} />
+                    {getRoleLabel(role)}
                   </div>
                 )}
                 <div
@@ -273,44 +471,73 @@ export default function ProfilPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "8px",
-                    padding: "8px 16px",
-                    backgroundColor: colors.gray100,
-                    color: colors.gray700,
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                    fontWeight: 600,
+                    padding: "6px 14px",
+                    background: colors.gray100,
+                    color: colors.gray600,
+                    borderRadius: "20px",
+                    fontSize: "12px",
                   }}
                 >
+                  <Mail size={14} />
                   {user?.email}
                 </div>
+                {profile?.commune && (
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "6px 14px",
+                      background: colors.gray100,
+                      color: colors.gray600,
+                      borderRadius: "20px",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <Building2 size={14} />
+                    {profile.commune}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
         {/* Navigation Sections */}
-        <div style={{ display: "grid", gap: "32px", marginBottom: "40px" }}>
+        <div style={{ display: "grid", gap: "40px", marginBottom: "40px" }}>
           {sections.map((section, idx) => (
             <div key={idx}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
                 {section.icon && (
-                  <section.icon size={24} color={colors.white} />
+                  <div style={{
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "10px",
+                    background: `${colors.deepBlue}10`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}>
+                    <section.icon size={18} color={colors.deepBlue} />
+                  </div>
                 )}
                 <h2
                   style={{
                     fontSize: "18px",
-                    fontWeight: 700,
-                    color: colors.white,
+                    fontWeight: 600,
+                    color: colors.gray700,
                     margin: 0,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
                   }}
                 >
                   {section.title}
                 </h2>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "16px",
+              }}>
                 {section.links.map((link, linkIdx) => {
                   const Icon = link.icon;
                   return (
@@ -322,55 +549,61 @@ export default function ProfilPage() {
                         alignItems: "center",
                         gap: "16px",
                         padding: "20px",
-                        backgroundColor: colors.white,
-                        borderRadius: "12px",
+                        background: colors.white,
+                        borderRadius: "20px",
                         textDecoration: "none",
                         color: "inherit",
                         cursor: "pointer",
-                        transition: "all 0.3s ease",
-                        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.1)",
+                        transition: "all 0.2s ease",
                         border: `1px solid ${colors.gray200}`,
+                        boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = "translateY(-4px)";
-                        e.currentTarget.style.boxShadow = "0 16px 40px rgba(0, 0, 0, 0.15)";
-                        (e.currentTarget.querySelector("[data-icon]") as any).style.transform = "scale(1.1)";
+                        e.currentTarget.style.transform = "translateY(-2px)";
+                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.08)";
+                        e.currentTarget.style.borderColor = link.color;
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.1)";
-                        (e.currentTarget.querySelector("[data-icon]") as any).style.transform = "scale(1)";
+                        e.currentTarget.style.boxShadow = "0 1px 2px rgba(0, 0, 0, 0.05)";
+                        e.currentTarget.style.borderColor = colors.gray200;
                       }}
                     >
                       <div
-                        data-icon
                         style={{
                           width: "48px",
                           height: "48px",
-                          borderRadius: "10px",
-                          backgroundColor: `${link.color}15`,
+                          borderRadius: "14px",
+                          background: link.bgColor,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           flexShrink: 0,
-                          transition: "transform 0.3s ease",
+                          transition: "all 0.2s ease",
                         }}
                       >
                         <Icon size={24} color={link.color} />
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, color: colors.ink, fontSize: "14px" }}>
+                        <div style={{
+                          fontWeight: 600,
+                          color: colors.gray800,
+                          fontSize: "15px",
+                          marginBottom: "4px",
+                        }}>
                           {link.label}
                         </div>
                         {link.description && (
-                          <div style={{ fontSize: "12px", color: colors.gray500, marginTop: "4px" }}>
+                          <div style={{
+                            fontSize: "12px",
+                            color: colors.gray500,
+                            lineHeight: 1.4,
+                          }}>
                             {link.description}
                           </div>
                         )}
                       </div>
-                      <div style={{ fontSize: "16px", color: colors.gray300, transition: "all 0.3s ease" }}>
-                        →
-                      </div>
+                      <ChevronRight size={18} color={colors.gray400} />
                     </a>
                   );
                 })}
@@ -382,18 +615,15 @@ export default function ProfilPage() {
         {/* Footer */}
         <div
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            borderRadius: "12px",
+            background: colors.gray50,
+            borderRadius: "20px",
             padding: "24px",
             textAlign: "center",
-            color: colors.white,
-            backdropFilter: "blur(10px)",
-            border: `1px solid rgba(255, 255, 255, 0.1)`,
-            marginBottom: "24px",
+            border: `1px solid ${colors.gray200}`,
           }}
         >
-          <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            © 2026 ALODO • Tous les services accessibles depuis votre espace personnel
+          <p style={{ margin: 0, fontSize: "13px", color: colors.gray500 }}>
+            © {new Date().getFullYear()} Alɔdó • Terminal sécurisé
           </p>
         </div>
       </div>
