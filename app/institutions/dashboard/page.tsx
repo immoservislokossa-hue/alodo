@@ -318,7 +318,11 @@ export default function InstitutionsDashboardPage() {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
                       <div style={{ display: "grid", gap: 8, flex: 1 }}>
-                        <div style={{ fontSize: 22, fontWeight: 800 }}>{post.titre}</div>
+                        <Link href={`/institutions/dashboard/${post.id}`} style={{ textDecoration: "none" }}>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: colors.ink, cursor: "pointer", transition: "color 0.2s ease" }} onMouseEnter={(e) => e.currentTarget.style.color = colors.green} onMouseLeave={(e) => e.currentTarget.style.color = colors.ink}>
+                            {post.titre}
+                          </div>
+                        </Link>
                         <div style={{ color: colors.muted, lineHeight: 1.7 }}>
                           {post.description}
                         </div>

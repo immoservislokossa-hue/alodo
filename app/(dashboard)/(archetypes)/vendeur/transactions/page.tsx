@@ -69,6 +69,8 @@ export default function TransactionsPage() {
     montant: "",
     produit_id: "",
     notes: "",
+    nom_client: "",
+    quantite: 1,
   });
 
   const [selectedProduit, setSelectedProduit] = useState<Produit | null>(null);
@@ -151,7 +153,11 @@ export default function TransactionsPage() {
 
       if (!profile) throw new Error("Profil non trouvé");
 
-      // Créer la transaction
+      // Créer la transaction avec metadata incluant nom_client, notes et quantite
+      const metadata = { quantite: formData.quantite };
+      if (formData.nom_client) (metadata as any).nom_client = formData.nom_client;
+      if (formData.notes) (metadata as any).notes = formData.notes;
+
       const { error: insertError } = await supabase
         .from("transactions")
         .insert({
@@ -159,7 +165,7 @@ export default function TransactionsPage() {
           type: formData.type,
           montant: montant,
           produit_id: formData.produit_id || null,
-          metadata: formData.notes ? { notes: formData.notes } : null,
+          metadata: metadata,
         });
 
       if (insertError) throw insertError;
@@ -184,6 +190,8 @@ export default function TransactionsPage() {
         montant: "",
         produit_id: "",
         notes: "",
+        nom_client: "",
+        quantite: 1,
       });
       setSelectedProduit(null);
       
@@ -369,6 +377,67 @@ export default function TransactionsPage() {
               )}
             </div>
           )}
+
+          {/* Nom du client */}
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{
+              display: "block",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: colors.gray700,
+              marginBottom: "8px",
+            }}>
+              Nom du client (optionnel)
+            </label>
+            <input
+              type="text"
+              name="nom_client"
+              value={formData.nom_client}
+              onChange={handleChange}
+              placeholder="Nom du client"
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: `1px solid ${colors.gray200}`,
+                borderRadius: "12px",
+                fontSize: "14px",
+                outline: "none",
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
+              onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
+            />
+          </div>
+
+          {/* Quantité */}
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{
+              display: "block",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: colors.gray700,
+              marginBottom: "8px",
+            }}>
+              Quantité (optionnel)
+            </label>
+            <input
+              type="number"
+              name="quantite"
+              value={formData.quantite}
+              onChange={handleChange}
+              min="1"
+              placeholder="1"
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                border: `1px solid ${colors.gray200}`,
+                borderRadius: "12px",
+                fontSize: "14px",
+                outline: "none",
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
+              onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
+            />
+          </div>
 
           {/* Montant */}
           <div style={{ marginBottom: "24px" }}>

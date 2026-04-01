@@ -274,6 +274,41 @@ export default function OnboardingPage() {
         return;
       }
       setUserId(data.user.id);
+
+      // Charger le profil pour vérifier l'état de l'onboarding
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", data.user.id)
+        .single();
+
+      if (profile) {
+        // Si le profil a un type, l'utilisateur a complété l'onboarding, rediriger
+        if (profile.type) {
+          try {
+            const dest = getPathForProfile({ type: profile.type, role: profile.role });
+            router.replace(dest);
+            return;
+          } catch (redirectErr) {
+            console.error('Redirect error:', redirectErr);
+          }
+        }
+        // Remplir le formulaire avec les données existantes
+        setForm({
+          langue: profile.langue || "fr",
+          phone: formatPhone(profile.phone || ""),
+          type: profile.type,
+          archetype: profile.archetype || "",
+          secteur: profile.secteur || "",
+          sousSecteur: profile.sous_secteur || "",
+          departement: profile.departement || "",
+          commune: profile.commune || "",
+          besoin: profile.besoin_financement || "",
+          revenu: profile.revenu_mensuel_estime_fcfa || null,
+          documents: profile.documents_disponibles || {},
+        });
+      }
+
       nextStep();
     } catch (err) {
       setError("Erreur de connexion. Vérifiez votre connexion internet.");
