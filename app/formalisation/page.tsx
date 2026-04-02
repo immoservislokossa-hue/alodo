@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { 
   Mic, 
@@ -98,7 +98,7 @@ const extractTextFromResponse = (data: any): { text: string; steps: string; link
   };
 };
 
-export default function ChatbotPage() {
+function ChatbotContent() {
   const searchParams = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -813,6 +813,43 @@ export default function ChatbotPage() {
         @keyframes pulseBg {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export default function ChatbotPage() {
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      minHeight: "100vh",
+      background: `linear-gradient(135deg, #1a3c6b 0%, #0e2a4a 100%)`,
+      padding: "20px",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+    }}>
+      <Suspense fallback={
+        <div style={{
+          width: "100%",
+          maxWidth: "800px",
+          height: "85vh",
+          background: "#FFFFFF",
+          borderRadius: "32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+        }}>
+          <Loader2 size={32} style={{ animation: "spin 1s linear infinite" }} color="#008751" />
+        </div>
+      }>
+        <ChatbotContent />
+      </Suspense>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
