@@ -102,6 +102,7 @@ export default function Navbar() {
   // Liens essentiels (visible partout)
   const essentialItems: NavItem[] = [
     { href: "/opportunites", icon: TrendingUp, label: "Opportunités", color: colors.beninGreen },
+    { href: "/tendances", icon: TrendingUp, label: "Tendances", color: colors.beninYellow },
     { href: "/wallet", icon: Wallet, label: "Portefeuille", color: colors.beninYellow },
     { href: "/formalisation", icon: Bot, label: "Assistant", color: colors.deepBlue },
   ];

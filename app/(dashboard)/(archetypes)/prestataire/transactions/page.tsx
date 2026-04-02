@@ -254,7 +254,8 @@ export default function TransactionsPage() {
     
     const matchesDate = () => {
       if (!dateRange.start && !dateRange.end) return true;
-      const transactionDate = new Date(t.date);
+      if (!t.date || t.date === null) return false;
+      const transactionDate = new Date(t.date as string);
       const start = dateRange.start ? new Date(dateRange.start) : null;
       const end = dateRange.end ? new Date(dateRange.end) : null;
       
@@ -283,7 +284,8 @@ export default function TransactionsPage() {
     return type === "income" ? <TrendingUp size={16} /> : <TrendingDown size={16} />;
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: string | null) => {
+    if (!date) return "-";
     return new Date(date).toLocaleDateString("fr-FR", {
       day: "numeric",
       month: "short",
@@ -292,8 +294,8 @@ export default function TransactionsPage() {
   };
 
   // Calcul des statistiques par projet
-  const getProjectStats = (projectId: string | null) => {
-    if (!projectId) return { income: 0, expense: 0 };
+  const getProjectStats = (projectId: string | null): { income: number; expense: number; margin: number } => {
+    if (!projectId) return { income: 0, expense: 0, margin: 0 };
     const projectTransactions = transactions.filter(t => t.project_id === projectId);
     const income = projectTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
     const expense = projectTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
@@ -517,10 +519,10 @@ export default function TransactionsPage() {
                       }}>
                         <span style={{ color: colors.gray600, fontWeight: 500 }}>Marge:</span>
                         <span style={{
-                          color: stats.margin >= 0 ? colors.beninGreen : colors.beninRed,
+                          color: (stats.margin ?? 0) >= 0 ? colors.beninGreen : colors.beninRed,
                           fontWeight: 700,
                         }}>
-                          {stats.margin >= 0 ? "+" : ""}{stats.margin.toLocaleString()} FCFA
+                          {(stats.margin ?? 0) >= 0 ? "+" : ""}{(stats.margin ?? 0).toLocaleString()} FCFA
                         </span>
                       </div>
                     </div>
@@ -968,11 +970,11 @@ export default function TransactionsPage() {
                       <span style={{ color: colors.gray600, fontWeight: 500 }}>Marge actuelle:</span>
                       <span style={{
                         marginLeft: "8px",
-                        color: getProjectStats(selectedProject.id).margin >= 0 ? colors.beninGreen : colors.beninRed,
+                        color: (getProjectStats(selectedProject.id).margin ?? 0) >= 0 ? colors.beninGreen : colors.beninRed,
                         fontWeight: 700,
                         fontSize: "13px"
                       }}>
-                        {getProjectStats(selectedProject.id).margin >= 0 ? "+" : ""}{getProjectStats(selectedProject.id).margin.toLocaleString()} FCFA
+                        {(getProjectStats(selectedProject.id).margin ?? 0) >= 0 ? "+" : ""}{(getProjectStats(selectedProject.id).margin ?? 0).toLocaleString()} FCFA
                       </span>
                     </div>
                   </div>

@@ -4,24 +4,42 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import supabase from "@/src/lib/supabase/browser";
-import { ArrowDown, ArrowUp, ArrowRight, Wallet, AlertCircle, CheckCircle, Loader, X } from "lucide-react";
+import { 
+  ArrowLeft,
+  Wallet, 
+  AlertCircle, 
+  CheckCircle, 
+  Loader2, 
+  X,
+  Calendar,
+  TrendingUp,
+  CreditCard,
+  Banknote,
+  History,
+  ChevronRight,
+  Shield,
+  Clock,
+  ArrowRight
+} from "lucide-react";
 
+// Couleurs du branding Alɔdó
 const colors = {
-  white: "#ffffff",
-  ink: "#163f2e",
-  blue: "#1a3c6b",
-  green: "#008751",
-  line: "#d7e4da",
-  muted: "#5d7667",
-  soft: "#f6faf7",
-};
-
-type WalletSession = {
-  id: string;
-  type: "dépôt" | "transfert" | "retrait";
-  montant: number;
-  date: string;
-  statut: "en_cours" | "terminé" | "échoué";
+  white: "#FFFFFF",
+  deepBlue: "#1a3c6b",
+  deepBlueDark: "#0e2a4a",
+  beninGreen: "#008751",
+  beninYellow: "#FCD116",
+  beninRed: "#E8112D",
+  gray50: "#F9FAFB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+  gray300: "#D1D5DB",
+  gray400: "#9CA3AF",
+  gray500: "#6B7280",
+  gray600: "#4B5563",
+  gray700: "#374151",
+  gray800: "#1F2937",
+  gray900: "#111827",
 };
 
 type Credit = {
@@ -33,6 +51,8 @@ type Credit = {
   created_at: string;
   totalRepaid: number;
   remainingBalance: number;
+  due_date?: string;
+  interest_rate?: number;
   profiles?: {
     full_name: string;
     archetype: string;
@@ -41,8 +61,6 @@ type Credit = {
 
 export default function WalletPage() {
   const router = useRouter();
-  const [solde, setSolde] = useState<number>(0);
-  const [transactions, setTransactions] = useState<WalletSession[]>([]);
   const [credits, setCredits] = useState<Credit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,7 +74,7 @@ export default function WalletPage() {
   useEffect(() => {
     let active = true;
 
-    async function loadWalletData() {
+    async function loadCreditsData() {
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const user = sessionData?.session?.user;
@@ -82,45 +100,67 @@ export default function WalletPage() {
           console.error("Error loading credits:", err);
         }
 
-        // TODO: Récupérer le solde et les transactions depuis Supabase
-        // const { data: walletData } = await supabase
-        //   .from("wallets")
-        //   .select("*")
-        //   .eq("user_id", user.id)
-        //   .single();
-
-        // const { data: txns } = await supabase
-        //   .from("wallet_transactions")
-        //   .select("*")
-        //   .eq("user_id", user.id)
-        //   .order("date", { ascending: false });
-
-        // Pour la démo:
-        setSolde(50000);
-        setTransactions([
-          {
-            id: "1",
-            type: "dépôt",
-            montant: 25000,
-            date: "2026-03-28",
-            statut: "terminé",
-          },
-          {
-            id: "2",
-            type: "transfert",
-            montant: 5000,
-            date: "2026-03-27",
-            statut: "terminé",
-          },
-        ]);
+        // Pour la démo - données mock
+        if (active && credits.length === 0) {
+          setCredits([
+            {
+              id: "1",
+              amount: 150000,
+              currency: "FCFA",
+              description: "Prêt pour expansion d'activité",
+              status: "received",
+              created_at: "2026-03-15",
+              totalRepaid: 50000,
+              remainingBalance: 100000,
+              due_date: "2026-06-15",
+              interest_rate: 8.5,
+              profiles: {
+                full_name: "Microfinance Bénin",
+                archetype: "Institution financière",
+              },
+            },
+            {
+              id: "2",
+              amount: 75000,
+              currency: "FCFA",
+              description: "Crédit équipement",
+              status: "received",
+              created_at: "2026-02-10",
+              totalRepaid: 25000,
+              remainingBalance: 50000,
+              due_date: "2026-05-10",
+              interest_rate: 7.5,
+              profiles: {
+                full_name: "Banque Atlantique",
+                archetype: "Banque",
+              },
+            },
+            {
+              id: "3",
+              amount: 200000,
+              currency: "FCFA",
+              description: "Prêt de campagne",
+              status: "received",
+              created_at: "2026-01-20",
+              totalRepaid: 150000,
+              remainingBalance: 50000,
+              due_date: "2026-04-20",
+              interest_rate: 9,
+              profiles: {
+                full_name: "Crédit Agricole",
+                archetype: "Banque agricole",
+              },
+            },
+          ]);
+        }
       } catch (err: any) {
-        if (active) setError(err?.message ?? "Erreur au chargement du portefeuille.");
+        if (active) setError(err?.message ?? "Erreur au chargement des crédits.");
       } finally {
         if (active) setLoading(false);
       }
     }
 
-    void loadWalletData();
+    void loadCreditsData();
     return () => {
       active = false;
     };
@@ -158,10 +198,12 @@ export default function WalletPage() {
       setRepaymentSuccess(true);
       setRepaymentAmount("");
 
-      // Redirect to Moneroo after a delay
       setTimeout(() => {
         if (data.data?.checkoutUrl) {
           window.location.href = data.data.checkoutUrl;
+        } else {
+          setSelectedCredit(null);
+          router.refresh();
         }
       }, 2000);
     } catch (err: any) {
@@ -171,184 +213,318 @@ export default function WalletPage() {
     }
   };
 
-  if (loading) return <div style={{ padding: 20 }}>Chargement du portefeuille…</div>;
-  if (error) return <div style={{ color: "red", padding: 20 }}>{error}</div>;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  const getDaysUntilDue = (dueDate: string) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getTotalRemainingBalance = () => {
+    return credits.reduce((sum, credit) => sum + credit.remainingBalance, 0);
+  };
+
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: colors.gray100,
+      }}>
+        <Loader2 size={40} color={colors.deepBlue} style={{ animation: "spin 1s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ minHeight: "100vh", padding: "24px", background: colors.gray100 }}>
+        <div style={{ color: colors.beninRed, textAlign: "center", padding: "48px" }}>{error}</div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ minHeight: "100vh", background: colors.soft, padding: "24px 18px 64px", color: colors.ink }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gap: 20 }}>
-        {/* Solde Principal */}
-        <section
-          style={{
-            background: `linear-gradient(135deg, ${colors.blue} 0%, ${colors.green} 100%)`,
-            color: colors.white,
-            borderRadius: 20,
-            padding: "32px 24px",
-            display: "grid",
-            gap: 16,
-            boxShadow: "0 10px 32px rgba(10, 26, 45, 0.15)",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Wallet size={24} />
-            <h1 style={{ margin: 0, fontSize: 28 }}>Mon Portefeuille</h1>
-          </div>
+    <div style={{ minHeight: "100vh", background: colors.gray100, paddingTop: "80px", paddingBottom: "48px" }}>
+      {/* Barre tricolore */}
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "4px",
+        display: "flex",
+        zIndex: 50,
+      }}>
+        <div style={{ flex: 1, background: colors.beninGreen }} />
+        <div style={{ flex: 1, background: colors.beninYellow }} />
+        <div style={{ flex: 1, background: colors.beninRed }} />
+      </div>
 
-          <div>
-            <div style={{ fontSize: 14, opacity: 0.9 }}>Solde disponible</div>
-            <div style={{ fontSize: 42, fontWeight: 700, marginTop: 8 }}>
-              {solde.toLocaleString("fr-FR")} FCFA
+      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 20px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "8px" }}>
+            <Link
+              href="/dashboard"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "40px",
+                height: "40px",
+                borderRadius: "12px",
+                background: colors.white,
+                border: `1px solid ${colors.gray200}`,
+                color: colors.gray600,
+              }}
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <h1 style={{
+                fontSize: "28px",
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                color: colors.deepBlue,
+                margin: 0,
+              }}>
+                Mes prêts
+              </h1>
+              <p style={{ color: colors.gray500, marginTop: "4px" }}>
+                Gérez vos crédits et effectuez vos remboursements
+              </p>
             </div>
           </div>
+        </div>
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}>
-            <Link href="/wallet/deposit" style={primaryButtonStyle}>
-              <ArrowDown size={18} />
-              Dépôt
-            </Link>
-            <Link href="/wallet/transfer" style={secondaryButtonStyle}>
-              <ArrowRight size={18} />
-              Transfert
-            </Link>
+        {/* Résumé des prêts */}
+        <div style={{
+          background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
+          borderRadius: "24px",
+          padding: "24px",
+          marginBottom: "32px",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute",
+            top: -40,
+            right: -40,
+            width: "150px",
+            height: "150px",
+            background: colors.beninGreen,
+            borderRadius: "50%",
+            opacity: 0.1,
+          }} />
+          
+          <div style={{ position: "relative", zIndex: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+              <Wallet size={20} color={colors.beninYellow} />
+              <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>Total à rembourser</span>
+            </div>
+            
+            <div style={{ fontSize: "36px", fontWeight: 700, color: colors.white, marginBottom: "8px" }}>
+              {getTotalRemainingBalance().toLocaleString("fr-FR")} FCFA
+            </div>
+            <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)" }}>
+              Sur {credits.length} prêt{credits.length > 1 ? "s" : ""} en cours
+            </div>
           </div>
-        </section>
+        </div>
 
-        {/* Crédits Reçus */}
-        {credits.length > 0 && (
-          <section style={{ background: colors.white, borderRadius: 16, padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: 600 }}>Crédits reçus</h2>
-
-            <div style={{ display: "grid", gap: 12 }}>
-              {credits.map((credit) => (
+        {/* Liste des prêts */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {credits.length === 0 ? (
+            <div style={{
+              background: colors.white,
+              borderRadius: "24px",
+              padding: "48px",
+              textAlign: "center",
+              border: `1px solid ${colors.gray200}`,
+            }}>
+              <Banknote size={48} color={colors.gray400} />
+              <h3 style={{ fontSize: "18px", fontWeight: 600, color: colors.gray600, marginTop: "16px" }}>
+                Aucun prêt en cours
+              </h3>
+              <p style={{ fontSize: "14px", color: colors.gray500, marginTop: "8px" }}>
+                Les prêts que vous recevrez apparaîtront ici
+              </p>
+            </div>
+          ) : (
+            credits.map((credit) => {
+              const daysUntilDue = credit.due_date ? getDaysUntilDue(credit.due_date) : null;
+              const isUrgent = daysUntilDue !== null && daysUntilDue <= 7 && daysUntilDue > 0;
+              const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+              const progressPercent = ((credit.amount - credit.remainingBalance) / credit.amount) * 100;
+              
+              return (
                 <div
                   key={credit.id}
                   style={{
-                    padding: "16px",
-                    border: `1px solid ${colors.line}`,
-                    borderRadius: 8,
-                    display: "grid",
-                    gap: 12,
+                    background: colors.white,
+                    borderRadius: "24px",
+                    padding: "24px",
+                    border: `1px solid ${colors.gray200}`,
+                    transition: "all 0.2s",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                  {/* En-tête */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: 16 }}>
+                      <div style={{ fontSize: "22px", fontWeight: 700, color: colors.deepBlue }}>
                         {credit.amount.toLocaleString("fr-FR")} {credit.currency}
                       </div>
-                      <div style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
+                      <div style={{ fontSize: "13px", color: colors.gray500, marginTop: "4px" }}>
                         {credit.profiles?.full_name || "Institution"}
                       </div>
-                      <div style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
+                      <div style={{ fontSize: "12px", color: colors.gray400, marginTop: "4px" }}>
                         {credit.description}
                       </div>
                     </div>
-                    <div
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        background:
-                          credit.status === "received"
-                            ? "#dffcf0"
-                            : credit.status === "repaid"
-                              ? "#e8f5e9"
-                              : "#fff3cd",
-                        color:
-                          credit.status === "received"
-                            ? colors.green
-                            : credit.status === "repaid"
-                              ? colors.green
-                              : "#856404",
-                      }}
-                    >
-                      {credit.status === "received"
-                        ? "Reçu"
-                        : credit.status === "repaid"
-                          ? "Remboursé"
-                          : "En cours"}
+                    <div style={{
+                      padding: "4px 12px",
+                      borderRadius: "20px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      background: `${colors.beninGreen}10`,
+                      color: colors.beninGreen,
+                    }}>
+                      En cours
                     </div>
                   </div>
 
-                  {credit.remainingBalance > 0 && (
-                    <div style={{ padding: "12px", background: colors.soft, borderRadius: 6 }}>
-                      <div style={{ fontSize: 12, color: colors.muted }}>À rembourser</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: colors.green, marginTop: 4 }}>
-                        {credit.remainingBalance.toLocaleString("fr-FR")} {credit.currency}
+                  {/* Barre de progression */}
+                  <div style={{ marginBottom: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", marginBottom: "8px" }}>
+                      <span style={{ color: colors.gray500 }}>Progression du remboursement</span>
+                      <span style={{ fontWeight: 600, color: colors.beninGreen }}>{Math.round(progressPercent)}%</span>
+                    </div>
+                    <div style={{
+                      height: "8px",
+                      background: colors.gray100,
+                      borderRadius: "4px",
+                      overflow: "hidden",
+                    }}>
+                      <div style={{
+                        width: `${progressPercent}%`,
+                        height: "100%",
+                        background: colors.beninGreen,
+                        borderRadius: "4px",
+                        transition: "width 0.3s",
+                      }} />
+                    </div>
+                  </div>
+
+                  {/* Détails du prêt */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                    gap: "16px",
+                    marginBottom: "20px",
+                    padding: "16px",
+                    background: colors.gray50,
+                    borderRadius: "16px",
+                  }}>
+                    <div>
+                      <div style={{ fontSize: "11px", color: colors.gray500 }}>Montant total</div>
+                      <div style={{ fontSize: "15px", fontWeight: 600, color: colors.gray700 }}>
+                        {credit.amount.toLocaleString("fr-FR")} FCFA
                       </div>
                     </div>
-                  )}
-
-                  {credit.remainingBalance > 0 && (
-                    <button
-                      onClick={() => {
-                        setSelectedCredit(credit);
-                        setRepaymentAmount("");
-                      }}
-                      style={{
-                        padding: "10px 16px",
-                        background: colors.green,
-                        color: colors.white,
-                        border: "none",
-                        borderRadius: 6,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Rembourser
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Historique des Transactions */}
-        <section style={{ background: colors.white, borderRadius: 16, padding: "24px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <h2 style={{ margin: "0 0 16px 0", fontSize: 20, fontWeight: 600 }}>Historique</h2>
-
-          {transactions.length === 0 ? (
-            <div style={{ color: colors.muted, textAlign: "center", padding: "32px 0" }}>
-              Aucune transaction pour le moment.
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 8 }}>
-              {transactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "12px 0",
-                    borderBottom: `1px solid ${colors.line}`,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ fontSize: 20 }}>
-                      {tx.type === "dépôt" ? "▼" : tx.type === "transfert" ? "→" : "▲"}
+                    <div>
+                      <div style={{ fontSize: "11px", color: colors.gray500 }}>Déjà remboursé</div>
+                      <div style={{ fontSize: "15px", fontWeight: 600, color: colors.beninGreen }}>
+                        {credit.totalRepaid.toLocaleString("fr-FR")} FCFA
+                      </div>
                     </div>
                     <div>
-                      <div style={{ fontWeight: 500 }}>{tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}</div>
-                      <div style={{ fontSize: 12, color: colors.muted }}>{tx.date}</div>
+                      <div style={{ fontSize: "11px", color: colors.gray500 }}>Reste à payer</div>
+                      <div style={{ fontSize: "15px", fontWeight: 700, color: colors.beninRed }}>
+                        {credit.remainingBalance.toLocaleString("fr-FR")} FCFA
+                      </div>
                     </div>
+                    {credit.interest_rate && (
+                      <div>
+                        <div style={{ fontSize: "11px", color: colors.gray500 }}>Taux d'intérêt</div>
+                        <div style={{ fontSize: "15px", fontWeight: 600, color: colors.gray700 }}>
+                          {credit.interest_rate}%
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 600 }}>{tx.montant.toLocaleString("fr-FR")} FCFA</div>
-                    <div style={{ fontSize: 12, color: tx.statut === "terminé" ? colors.green : colors.muted }}>
-                      {tx.statut.charAt(0).toUpperCase() + tx.statut.slice(1)}
+
+                  {/* Date d'échéance */}
+                  {credit.due_date && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      background: isOverdue ? `${colors.beninRed}10` : isUrgent ? `${colors.beninYellow}10` : colors.gray50,
+                      marginBottom: "20px",
+                    }}>
+                      <Calendar size={16} color={isOverdue ? colors.beninRed : isUrgent ? colors.beninYellow : colors.gray500} />
+                      <span style={{ fontSize: "13px", color: isOverdue ? colors.beninRed : isUrgent ? colors.beninYellow : colors.gray600 }}>
+                        Échéance : {formatDate(credit.due_date)}
+                        {isOverdue && <span style={{ marginLeft: "8px", fontWeight: 600 }}>(En retard)</span>}
+                        {!isOverdue && daysUntilDue !== null && daysUntilDue <= 30 && (
+                          <span style={{ marginLeft: "8px" }}>({daysUntilDue} jours restants)</span>
+                        )}
+                      </span>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Bouton de remboursement */}
+                  <button
+                    onClick={() => {
+                      setSelectedCredit(credit);
+                      setRepaymentAmount("");
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "14px",
+                      background: colors.beninGreen,
+                      color: colors.white,
+                      border: "none",
+                      borderRadius: "14px",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = colors.beninGreen + "dd"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = colors.beninGreen}
+                  >
+                    <ArrowRight size={18} />
+                    Rembourser
+                  </button>
                 </div>
-              ))}
-            </div>
+              );
+            })
           )}
-        </section>
+        </div>
       </div>
 
-      {/* Repayment Modal */}
+      {/* Modal de remboursement */}
       {selectedCredit && (
         <div
           style={{
@@ -360,7 +536,8 @@ export default function WalletPage() {
             background: "rgba(0, 0, 0, 0.5)",
             display: "flex",
             alignItems: "flex-end",
-            zIndex: 50,
+            justifyContent: "center",
+            zIndex: 1000,
           }}
           onClick={() => setSelectedCredit(null)}
         >
@@ -368,58 +545,86 @@ export default function WalletPage() {
             style={{
               background: colors.white,
               width: "100%",
-              maxWidth: 500,
-              borderRadius: "20px 20px 0 0",
-              padding: "24px",
+              maxWidth: "500px",
+              borderRadius: "28px 28px 0 0",
+              padding: "28px 24px",
               maxHeight: "80vh",
               overflowY: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Rembourser</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+              <h3 style={{ fontSize: "22px", fontWeight: 700, color: colors.gray800, margin: 0 }}>
+                Remboursement
+              </h3>
               <button
                 onClick={() => setSelectedCredit(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 24 }}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}
               >
-                <X size={24} />
+                <X size={22} color={colors.gray400} />
               </button>
             </div>
 
             {repaymentSuccess && (
-              <div style={{ marginBottom: 16, padding: 12, background: "#dffcf0", borderRadius: 8, display: "flex", gap: 8 }}>
-                <CheckCircle size={20} color={colors.green} />
-                <div style={{ fontSize: 14, color: colors.green }}>
+              <div style={{
+                marginBottom: "20px",
+                padding: "14px",
+                background: `${colors.beninGreen}10`,
+                borderRadius: "14px",
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+              }}>
+                <CheckCircle size={20} color={colors.beninGreen} />
+                <div style={{ fontSize: "14px", color: colors.beninGreen }}>
                   Remboursement initié. Redirection en cours...
                 </div>
               </div>
             )}
 
             {repaymentError && (
-              <div style={{ marginBottom: 16, padding: 12, background: "#f8d7da", borderRadius: 8, display: "flex", gap: 8 }}>
-                <AlertCircle size={20} color="#721c24" />
-                <div style={{ fontSize: 14, color: "#721c24" }}>{repaymentError}</div>
+              <div style={{
+                marginBottom: "20px",
+                padding: "14px",
+                background: `${colors.beninRed}10`,
+                borderRadius: "14px",
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+              }}>
+                <AlertCircle size={20} color={colors.beninRed} />
+                <div style={{ fontSize: "14px", color: colors.beninRed }}>{repaymentError}</div>
               </div>
             )}
 
-            <form onSubmit={handleRepayment} style={{ display: "grid", gap: 16 }}>
+            <form onSubmit={handleRepayment} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div>
-                <div style={{ fontSize: 12, color: colors.muted, marginBottom: 4 }}>Montant à rembourser</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: colors.green }}>
+                <div style={{ fontSize: "13px", color: colors.gray500, marginBottom: "4px" }}>
+                  Montant du prêt
+                </div>
+                <div style={{ fontSize: "28px", fontWeight: 700, color: colors.deepBlue }}>
                   {selectedCredit.amount.toLocaleString("fr-FR")} {selectedCredit.currency}
                 </div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: colors.muted, marginBottom: 4 }}>Solde restant</div>
-                <div style={{ fontSize: 18, fontWeight: 600 }}>
+                <div style={{ fontSize: "13px", color: colors.gray500, marginBottom: "4px" }}>
+                  Reste à rembourser
+                </div>
+                <div style={{ fontSize: "24px", fontWeight: 700, color: colors.beninRed }}>
                   {selectedCredit.remainingBalance.toLocaleString("fr-FR")} {selectedCredit.currency}
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 8, display: "block" }}>
-                  Montant du remboursement *
+                <label style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: colors.gray700,
+                  marginBottom: "8px",
+                }}>
+                  Montant à rembourser *
                 </label>
                 <input
                   type="number"
@@ -427,77 +632,52 @@ export default function WalletPage() {
                   onChange={(e) => setRepaymentAmount(e.target.value)}
                   placeholder="Entrez le montant"
                   max={selectedCredit.remainingBalance}
-                  step="100"
+                  step="1000"
                   required
                   style={{
                     width: "100%",
-                    padding: "12px",
-                    border: `1px solid ${colors.line}`,
-                    borderRadius: 8,
-                    fontSize: 14,
-                    boxSizing: "border-box",
+                    padding: "14px",
+                    border: `1px solid ${colors.gray200}`,
+                    borderRadius: "14px",
+                    fontSize: "16px",
+                    outline: "none",
                   }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
+                  onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
                 />
+                <p style={{ fontSize: "11px", color: colors.gray400, marginTop: "6px" }}>
+                  Montant minimum : 1 000 FCFA
+                </p>
               </div>
 
               <button
                 type="submit"
                 disabled={repaymentLoading || repaymentSuccess}
                 style={{
-                  padding: "12px",
-                  background: colors.green,
+                  width: "100%",
+                  padding: "16px",
+                  background: colors.beninGreen,
                   color: colors.white,
                   border: "none",
-                  borderRadius: 8,
-                  fontSize: 16,
+                  borderRadius: "14px",
+                  fontSize: "16px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: repaymentLoading || repaymentSuccess ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 8,
+                  gap: "8px",
                   opacity: repaymentLoading || repaymentSuccess ? 0.6 : 1,
                 }}
               >
-                {repaymentLoading && <Loader size={20} className="animate-spin" />}
+                {repaymentLoading && <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />}
                 {repaymentLoading ? "Traitement..." : "Confirmer le remboursement"}
               </button>
             </form>
           </div>
         </div>
       )}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
-
-const primaryButtonStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "10px 20px",
-  background: colors.white,
-  color: colors.blue,
-  border: "none",
-  borderRadius: 8,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-  textDecoration: "none",
-  transition: "all 0.2s",
-} as React.CSSProperties;
-
-const secondaryButtonStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "10px 20px",
-  background: "rgba(255, 255, 255, 0.2)",
-  color: colors.white,
-  border: `1px solid rgba(255, 255, 255, 0.3)`,
-  borderRadius: 8,
-  fontSize: 14,
-  fontWeight: 600,
-  cursor: "pointer",
-  textDecoration: "none",
-  transition: "all 0.2s",
-} as React.CSSProperties;

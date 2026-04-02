@@ -31,9 +31,33 @@ import {
   ArrowLeft
 } from 'lucide-react'
 
-// ─────────────────────────────────────────────
+// ============================================================================
+// COULEURS DU BRANDING ALO̱DÓ
+// ============================================================================
+
+const colors = {
+  white: '#FFFFFF',
+  deepBlue: '#1a3c6b',
+  deepBlueDark: '#0e2a4a',
+  deepBlueLight: '#2c4e7e',
+  beninGreen: '#008751',
+  beninYellow: '#FCD116',
+  beninRed: '#E8112D',
+  gray50: '#F9FAFB',
+  gray100: '#F3F4F6',
+  gray200: '#E5E7EB',
+  gray300: '#D1D5DB',
+  gray400: '#9CA3AF',
+  gray500: '#6B7280',
+  gray600: '#4B5563',
+  gray700: '#374151',
+  gray800: '#1F2937',
+  gray900: '#111827',
+}
+
+// ============================================================================
 // TYPES
-// ─────────────────────────────────────────────
+// ============================================================================
 
 type Tendance = 'hausse' | 'stable' | 'baisse'
 type Impact = 'positif' | 'neutre' | 'negatif'
@@ -83,9 +107,9 @@ interface SecteurData {
 
 type Langue = 'fr' | 'fon' | 'yor'
 
-// ─────────────────────────────────────────────
+// ============================================================================
 // MOCK DATA
-// ─────────────────────────────────────────────
+// ============================================================================
 
 const MOCK_DATA: Record<string, SecteurData> = {
   commerce_alimentaire: {
@@ -118,21 +142,21 @@ const MOCK_DATA: Record<string, SecteurData> = {
     tendances: [
       {
         titre: 'Essor de la vente en ligne alimentaire',
-        description: 'Les plateformes comme Glovo et les groupes WhatsApp de commandes collectives captent une clientèle urbaine croissante. Les épiceries qui proposent la prise de commande par téléphone progressent de 28% vs celles qui n\'y sont pas.',
+        description: 'Les plateformes comme Glovo et les groupes WhatsApp de commandes collectives captent une clientèle urbaine croissante.',
         impact: 'positif',
         horizon: '6 – 18 mois',
         score_opportunite: 82,
       },
       {
         titre: 'Tension sur les prix des céréales importées',
-        description: 'La hausse des cours mondiaux du blé et du riz importé impacte les marges. Les commerçants qui s\'approvisionnent localement (riz de l\'Alibori) maintiennent mieux leurs prix.',
+        description: 'La hausse des cours mondiaux du blé et du riz importé impacte les marges.',
         impact: 'negatif',
         horizon: '3 – 6 mois',
         score_opportunite: 35,
       },
       {
         titre: 'Croissance de la classe moyenne à Cotonou',
-        description: 'La demande pour des produits alimentaires de meilleure qualité (emballage, hygiène) augmente. Opportunité pour se positionner sur le segment "qualité" avec un différentiel de prix de 10-15%.',
+        description: 'La demande pour des produits alimentaires de meilleure qualité augmente.',
         impact: 'positif',
         horizon: '12 – 36 mois',
         score_opportunite: 74,
@@ -141,21 +165,21 @@ const MOCK_DATA: Record<string, SecteurData> = {
     reglementation: [
       {
         titre: 'Licence de commerce alimentaire',
-        description: 'Toute activité de vente de denrées alimentaires requiert une inscription au RCCM et un IFU actif. Les contrôles de l\'ANPC se sont intensifiés en 2025-2026.',
+        description: 'Toute activité de vente de denrées alimentaires requiert une inscription au RCCM et un IFU actif.',
         source: 'ANPC / Ministère du Commerce',
         date_maj: 'Janvier 2026',
         statut: 'obligatoire',
       },
       {
         titre: 'Normes d\'hygiène CEDEAO',
-        description: 'Les produits alimentaires vendus doivent respecter les normes CEDEAO sur la conservation et l\'étiquetage. Amendes de 50 000 à 500 000 FCFA en cas de non-conformité.',
+        description: 'Les produits alimentaires vendus doivent respecter les normes CEDEAO sur la conservation et l\'étiquetage.',
         source: 'CEDEAO / Codex Alimentarius',
         date_maj: 'Mars 2026',
         statut: 'obligatoire',
       },
       {
         titre: 'Crédit fournisseur : nouvelle directive BCEAO',
-        description: 'La BCEAO encourage les IMF à proposer des produits de crédit de stock court terme (30-90 jours) aux commerçants formalisés. Taux plafond : 12% annuel pour les IMF agréées.',
+        description: 'La BCEAO encourage les IMF à proposer des produits de crédit de stock court terme aux commerçants formalisés.',
         source: 'BCEAO – Instruction N°008-2025',
         date_maj: 'Octobre 2025',
         statut: 'info',
@@ -184,7 +208,7 @@ const MOCK_DATA: Record<string, SecteurData> = {
       ],
       points_cles: [
         'La demande de tenues personnalisées résiste bien au prêt-à-porter',
-        'Réseaux sociaux (Instagram/TikTok) = principale source de nouveaux clients',
+        'Réseaux sociaux = principale source de nouveaux clients',
         'Délai de livraison : facteur clé de fidélisation',
         'Forte saisonnalité : fêtes, rentrée scolaire, mariages',
       ],
@@ -192,21 +216,21 @@ const MOCK_DATA: Record<string, SecteurData> = {
     tendances: [
       {
         titre: 'Mode afro-fusion en forte demande',
-        description: 'Le mariage des tissus africains (wax, kente, bogolan) avec des coupes modernes séduit la jeunesse urbaine. Les artisans qui maîtrisent ce style facturent 30-50% plus cher.',
+        description: 'Le mariage des tissus africains avec des coupes modernes séduit la jeunesse urbaine.',
         impact: 'positif',
         horizon: '12 – 24 mois',
         score_opportunite: 88,
       },
       {
         titre: 'Hausse du prix du wax et du fil',
-        description: 'Les matières premières ont augmenté de 10-15% en 2025. Répercuter sur les prix ou absorber la marge ? Les artisans qui travaillent avec des fournisseurs locaux sont moins exposés.',
+        description: 'Les matières premières ont augmenté de 10-15% en 2025.',
         impact: 'negatif',
         horizon: '3 – 9 mois',
         score_opportunite: 28,
       },
       {
         titre: 'Commandes groupées via WhatsApp Business',
-        description: 'Plusieurs couturières à Porto-Novo forment des groupements informels pour gérer des commandes de tenues identiques (uniformes associatifs, cérémonies). Le CA moyen progresse de 40%.',
+        description: 'Plusieurs couturières forment des groupements informels pour gérer des commandes groupées.',
         impact: 'positif',
         horizon: '0 – 6 mois',
         score_opportunite: 79,
@@ -215,21 +239,21 @@ const MOCK_DATA: Record<string, SecteurData> = {
     reglementation: [
       {
         titre: 'Artisan reconnu : carte professionnelle FENAB',
-        description: 'L\'obtention de la carte professionnelle de la FENAB (Fédération Nationale des Artisans du Bénin) permet d\'accéder aux marchés publics et aux crédits artisanaux.',
+        description: 'L\'obtention de la carte professionnelle permet d\'accéder aux marchés publics et aux crédits artisanaux.',
         source: 'FENAB / Ministère des PME',
         date_maj: 'Février 2026',
         statut: 'recommande',
       },
       {
         titre: 'Cotisations CNSS pour artisans',
-        description: 'Les artisans indépendants peuvent s\'affilier volontairement à la CNSS (régime simplifié). Cotisation fixe de 7 500 FCFA/trimestre. Donne accès à la protection maladie et retraite.',
+        description: 'Les artisans indépendants peuvent s\'affilier volontairement à la CNSS.',
         source: 'CNSS Bénin',
         date_maj: 'Janvier 2026',
         statut: 'recommande',
       },
       {
         titre: 'Fonds d\'appui aux artisans BCEAO/BRS',
-        description: 'La Banque Régionale de Solidarité (BRS) propose des micro-crédits équipement pour les artisans formalisés. Montant : 150 000 à 3 000 000 FCFA, taux préférentiel 8%.',
+        description: 'La Banque Régionale de Solidarité propose des micro-crédits équipement pour les artisans formalisés.',
         source: 'BRS / BCEAO',
         date_maj: 'Novembre 2025',
         statut: 'info',
@@ -237,251 +261,6 @@ const MOCK_DATA: Record<string, SecteurData> = {
     ],
   },
 }
-
-// ─────────────────────────────────────────────
-// COMPOSANTS
-// ─────────────────────────────────────────────
-
-function TrendBadge({ tendance, variation }: { tendance: Tendance; variation: number }) {
-  if (tendance === 'hausse') return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600">
-      <TrendingUp size={12} /> +{variation}%
-    </span>
-  )
-  if (tendance === 'baisse') return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700">
-      <TrendingDown size={12} /> {variation}%
-    </span>
-  )
-  return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
-      <Minus size={12} /> Stable
-    </span>
-  )
-}
-
-function ImpactBadge({ impact }: { impact: Impact }) {
-  const map = {
-    positif: { label: 'Opportunité', cls: 'bg-green-100 text-green-700', Icon: Sparkles },
-    negatif: { label: 'Risque', cls: 'bg-red-100 text-red-600', Icon: AlertCircle },
-    neutre: { label: 'À surveiller', cls: 'bg-yellow-100 text-yellow-700', Icon: Eye },
-  }
-  const { label, cls, Icon } = map[impact]
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${cls}`}>
-      <Icon size={12} /> {label}
-    </span>
-  )
-}
-
-function NiveauConcurrenceBadge({ niveau }: { niveau: NiveauConcurrence }) {
-  const map = {
-    faible: { label: 'Faible', cls: 'bg-green-100 text-green-700' },
-    moyen: { label: 'Moyen', cls: 'bg-yellow-100 text-yellow-700' },
-    eleve: { label: 'Élevé', cls: 'bg-red-100 text-red-600' },
-  }
-  const { label, cls } = map[niveau]
-  return <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
-}
-
-function StatutBadge({ statut }: { statut: RegleBCEAO['statut'] }) {
-  if (statut === 'obligatoire') return (
-    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Obligatoire</span>
-  )
-  if (statut === 'recommande') return (
-    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Recommandé</span>
-  )
-  return (
-    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Information</span>
-  )
-}
-
-function ScoreBar({ score }: { score: number }) {
-  const color = score >= 70 ? '#008751' : score >= 40 ? '#FCD116' : '#E8112D'
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${score}%`, backgroundColor: color }}
-        />
-      </div>
-      <span className="text-xs font-bold tabular-nums" style={{ color }}>{score}/100</span>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
-// SECTION PRIX
-// ─────────────────────────────────────────────
-
-function SectionPrix({ data }: { data: PrixMarche[] }) {
-  return (
-    <div className="space-y-3">
-      {data.map((item, i) => (
-        <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white border border-gray-100 hover:border-gray-200 transition-colors">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-800">{item.produit}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {item.prix_min.toLocaleString('fr-FR')} – {item.prix_max.toLocaleString('fr-FR')} FCFA / {item.unite}
-            </p>
-          </div>
-          <TrendBadge tendance={item.tendance} variation={item.variation_pct} />
-        </div>
-      ))}
-      <p className="text-xs text-gray-400 text-center pt-3">
-        Estimations basées sur des relevés de marché régionaux UEMOA – Mars 2026
-      </p>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
-// SECTION CONCURRENCE
-// ─────────────────────────────────────────────
-
-function SectionConcurrence({ data }: { data: Concurrence }) {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-gray-50">
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Niveau de concurrence</p>
-          <NiveauConcurrenceBadge niveau={data.niveau} />
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-gray-500 mb-1">Acteurs estimés</p>
-          <p className="text-sm font-bold text-gray-700">{data.nb_acteurs}</p>
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Répartition du marché</p>
-        <div className="space-y-3">
-          {data.parts_marche.map((p, i) => (
-            <div key={i}>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-gray-600">{p.nom}</span>
-                <span className="font-medium text-gray-700">{p.part}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${p.part}%`, backgroundColor: '#008751', opacity: 0.6 + (i * 0.1) }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Points clés</p>
-        <div className="space-y-2">
-          {data.points_cles.map((pt, i) => (
-            <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-gray-50">
-              <ArrowUpRight size={14} className="text-green-600 mt-0.5 shrink-0" />
-              <p className="text-sm text-gray-600">{pt}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
-// SECTION TENDANCES
-// ─────────────────────────────────────────────
-
-function SectionTendances({ data }: { data: TendanceSectorielle[] }) {
-  const [expanded, setExpanded] = useState<number | null>(0)
-
-  return (
-    <div className="space-y-3">
-      {data.map((t, i) => (
-        <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
-          <button
-            onClick={() => setExpanded(expanded === i ? null : i)}
-            className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors text-left"
-          >
-            <div className="flex items-center gap-3 flex-1">
-              <Flame size={16} className={t.impact === 'positif' ? 'text-green-600' : t.impact === 'negatif' ? 'text-red-600' : 'text-yellow-600'} />
-              <span className="text-sm font-semibold text-gray-800">{t.titre}</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <ImpactBadge impact={t.impact} />
-              {expanded === i ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-            </div>
-          </button>
-          {expanded === i && (
-            <div className="px-4 pb-4 bg-gray-50 space-y-3">
-              <p className="text-sm text-gray-600 leading-relaxed pt-2">{t.description}</p>
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Horizon : {t.horizon}</span>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Score d'opportunité</p>
-                <ScoreBar score={t.score_opportunite} />
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
-// SECTION RÉGLEMENTATION
-// ─────────────────────────────────────────────
-
-function SectionReglementation({ data }: { data: RegleBCEAO[] }) {
-  const [expanded, setExpanded] = useState<number | null>(null)
-
-  return (
-    <div className="space-y-3">
-      {data.map((r, i) => (
-        <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
-          <button
-            onClick={() => setExpanded(expanded === i ? null : i)}
-            className="w-full flex items-center justify-between p-4 bg-white hover:bg-gray-50 transition-colors text-left"
-          >
-            <div className="flex items-center gap-3 flex-1">
-              <ShieldCheck size={16} className="text-blue-600" />
-              <span className="text-sm font-semibold text-gray-800">{r.titre}</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <StatutBadge statut={r.statut} />
-              {expanded === i ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-            </div>
-          </button>
-          {expanded === i && (
-            <div className="px-4 pb-4 bg-gray-50 space-y-2">
-              <p className="text-sm text-gray-600 leading-relaxed pt-2">{r.description}</p>
-              <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-200">
-                <span>{r.source}</span>
-                <span>Mis à jour : {r.date_maj}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────
-// PAGE PRINCIPALE
-// ─────────────────────────────────────────────
-
-const TABS = [
-  { id: 'prix', label: 'Prix marché', icon: Tag },
-  { id: 'concurrence', label: 'Concurrence', icon: Users },
-  { id: 'tendances', label: 'Tendances', icon: BarChart2 },
-  { id: 'reglementation', label: 'Réglementation', icon: ShieldCheck },
-] as const
-
-type TabId = typeof TABS[number]['id']
 
 const MOCK_PROFIL = {
   prenom: 'Adjoua',
@@ -522,6 +301,381 @@ Reglementation: ${data.reglementation[0].titre}
 Plus d'infos: *789#`
 }
 
+// ============================================================================
+// COMPOSANTS STYLISÉS
+// ============================================================================
+
+function TrendBadge({ tendance, variation }: { tendance: Tendance; variation: number }) {
+  if (tendance === 'hausse') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        fontSize: '11px',
+        fontWeight: 600,
+        padding: '2px 8px',
+        borderRadius: '20px',
+        background: `${colors.beninRed}10`,
+        color: colors.beninRed,
+      }}>
+        <TrendingUp size={12} /> +{variation}%
+      </span>
+    )
+  }
+  if (tendance === 'baisse') {
+    return (
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        fontSize: '11px',
+        fontWeight: 600,
+        padding: '2px 8px',
+        borderRadius: '20px',
+        background: `${colors.beninGreen}10`,
+        color: colors.beninGreen,
+      }}>
+        <TrendingDown size={12} /> {variation}%
+      </span>
+    )
+  }
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontSize: '11px',
+      fontWeight: 600,
+      padding: '2px 8px',
+      borderRadius: '20px',
+      background: colors.gray100,
+      color: colors.gray500,
+    }}>
+      <Minus size={12} /> Stable
+    </span>
+  )
+}
+
+function ImpactBadge({ impact }: { impact: Impact }) {
+  const map = {
+    positif: { label: 'Opportunité', color: colors.beninGreen, bg: `${colors.beninGreen}10`, Icon: Sparkles },
+    negatif: { label: 'Risque', color: colors.beninRed, bg: `${colors.beninRed}10`, Icon: AlertCircle },
+    neutre: { label: 'À surveiller', color: colors.beninYellow, bg: `${colors.beninYellow}10`, Icon: Eye },
+  }
+  const { label, color, bg, Icon } = map[impact]
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontSize: '11px',
+      fontWeight: 600,
+      padding: '2px 8px',
+      borderRadius: '20px',
+      background: bg,
+      color: color,
+    }}>
+      <Icon size={12} /> {label}
+    </span>
+  )
+}
+
+function NiveauConcurrenceBadge({ niveau }: { niveau: NiveauConcurrence }) {
+  const map = {
+    faible: { label: 'Faible', color: colors.beninGreen, bg: `${colors.beninGreen}10` },
+    moyen: { label: 'Moyen', color: colors.beninYellow, bg: `${colors.beninYellow}10` },
+    eleve: { label: 'Élevé', color: colors.beninRed, bg: `${colors.beninRed}10` },
+  }
+  const { label, color, bg } = map[niveau]
+  return (
+    <span style={{
+      fontSize: '11px',
+      fontWeight: 700,
+      padding: '2px 8px',
+      borderRadius: '20px',
+      background: bg,
+      color: color,
+    }}>
+      {label}
+    </span>
+  )
+}
+
+function StatutBadge({ statut }: { statut: RegleBCEAO['statut'] }) {
+  if (statut === 'obligatoire') {
+    return (
+      <span style={{
+        fontSize: '11px',
+        fontWeight: 700,
+        padding: '2px 8px',
+        borderRadius: '20px',
+        background: `${colors.beninRed}10`,
+        color: colors.beninRed,
+      }}>
+        Obligatoire
+      </span>
+    )
+  }
+  if (statut === 'recommande') {
+    return (
+      <span style={{
+        fontSize: '11px',
+        fontWeight: 700,
+        padding: '2px 8px',
+        borderRadius: '20px',
+        background: `${colors.deepBlue}10`,
+        color: colors.deepBlue,
+      }}>
+        Recommandé
+      </span>
+    )
+  }
+  return (
+    <span style={{
+      fontSize: '11px',
+      fontWeight: 700,
+      padding: '2px 8px',
+      borderRadius: '20px',
+      background: colors.gray100,
+      color: colors.gray500,
+    }}>
+      Information
+    </span>
+  )
+}
+
+function ScoreBar({ score }: { score: number }) {
+  const color = score >= 70 ? colors.beninGreen : score >= 40 ? colors.beninYellow : colors.beninRed
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div style={{
+        flex: 1,
+        height: '6px',
+        background: colors.gray100,
+        borderRadius: '3px',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${score}%`,
+          height: '100%',
+          background: color,
+          borderRadius: '3px',
+          transition: 'width 0.7s ease',
+        }} />
+      </div>
+      <span style={{
+        fontSize: '11px',
+        fontWeight: 700,
+        color: color,
+      }}>{score}/100</span>
+    </div>
+  )
+}
+
+// ============================================================================
+// SECTIONS
+// ============================================================================
+
+function SectionPrix({ data }: { data: PrixMarche[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {data.map((item, i) => (
+        <div key={i} style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px',
+          background: colors.white,
+          borderRadius: '16px',
+          border: `1px solid ${colors.gray200}`,
+          transition: 'all 0.2s ease',
+        }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '14px', fontWeight: 500, color: colors.gray800 }}>{item.produit}</p>
+            <p style={{ fontSize: '11px', color: colors.gray400, marginTop: '2px' }}>
+              {item.prix_min.toLocaleString('fr-FR')} – {item.prix_max.toLocaleString('fr-FR')} FCFA / {item.unite}
+            </p>
+          </div>
+          <TrendBadge tendance={item.tendance} variation={item.variation_pct} />
+        </div>
+      ))}
+      <p style={{ fontSize: '10px', color: colors.gray400, textAlign: 'center', paddingTop: '12px' }}>
+        Estimations basées sur des relevés de marché régionaux UEMOA – Mars 2026
+      </p>
+    </div>
+  )
+}
+
+function SectionConcurrence({ data }: { data: Concurrence }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '16px',
+        padding: '16px',
+        background: colors.gray50,
+        borderRadius: '16px',
+      }}>
+        <div>
+          <p style={{ fontSize: '11px', color: colors.gray400, marginBottom: '4px' }}>Niveau de concurrence</p>
+          <NiveauConcurrenceBadge niveau={data.niveau} />
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: '11px', color: colors.gray400, marginBottom: '4px' }}>Acteurs estimés</p>
+          <p style={{ fontSize: '14px', fontWeight: 700, color: colors.gray700 }}>{data.nb_acteurs}</p>
+        </div>
+      </div>
+
+      <div>
+        <p style={{ fontSize: '11px', fontWeight: 600, color: colors.gray500, textTransform: 'uppercase', marginBottom: '12px' }}>
+          Répartition du marché
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {data.parts_marche.map((p, i) => (
+            <div key={i}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                <span style={{ color: colors.gray600 }}>{p.nom}</span>
+                <span style={{ fontWeight: 500, color: colors.gray700 }}>{p.part}%</span>
+              </div>
+              <div style={{ height: '6px', background: colors.gray100, borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  width: `${p.part}%`,
+                  height: '100%',
+                  background: colors.beninGreen,
+                  borderRadius: '3px',
+                  opacity: 0.6 + (i * 0.1),
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p style={{ fontSize: '11px', fontWeight: 600, color: colors.gray500, textTransform: 'uppercase', marginBottom: '12px' }}>
+          Points clés
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {data.points_cles.map((pt, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px', background: colors.gray50, borderRadius: '12px' }}>
+              <ArrowUpRight size={14} color={colors.beninGreen} style={{ marginTop: '2px', flexShrink: 0 }} />
+              <p style={{ fontSize: '13px', color: colors.gray600 }}>{pt}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SectionTendances({ data }: { data: TendanceSectorielle[] }) {
+  const [expanded, setExpanded] = useState<number | null>(0)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {data.map((t, i) => (
+        <div key={i} style={{ borderRadius: '16px', border: `1px solid ${colors.gray200}`, overflow: 'hidden' }}>
+          <button
+            onClick={() => setExpanded(expanded === i ? null : i)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px',
+              background: colors.white,
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+              <Flame size={16} color={t.impact === 'positif' ? colors.beninGreen : t.impact === 'negatif' ? colors.beninRed : colors.beninYellow} />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: colors.gray800 }}>{t.titre}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <ImpactBadge impact={t.impact} />
+              {expanded === i ? <ChevronUp size={16} color={colors.gray400} /> : <ChevronDown size={16} color={colors.gray400} />}
+            </div>
+          </button>
+          {expanded === i && (
+            <div style={{ padding: '16px', background: colors.gray50, borderTop: `1px solid ${colors.gray200}` }}>
+              <p style={{ fontSize: '13px', color: colors.gray600, lineHeight: 1.5, marginBottom: '12px' }}>{t.description}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', color: colors.gray400, marginBottom: '12px' }}>
+                <span>Horizon : {t.horizon}</span>
+              </div>
+              <div>
+                <p style={{ fontSize: '10px', color: colors.gray400, marginBottom: '6px' }}>Score d'opportunité</p>
+                <ScoreBar score={t.score_opportunite} />
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SectionReglementation({ data }: { data: RegleBCEAO[] }) {
+  const [expanded, setExpanded] = useState<number | null>(null)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {data.map((r, i) => (
+        <div key={i} style={{ borderRadius: '16px', border: `1px solid ${colors.gray200}`, overflow: 'hidden' }}>
+          <button
+            onClick={() => setExpanded(expanded === i ? null : i)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px',
+              background: colors.white,
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+              <ShieldCheck size={16} color={colors.deepBlue} />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: colors.gray800 }}>{r.titre}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <StatutBadge statut={r.statut} />
+              {expanded === i ? <ChevronUp size={16} color={colors.gray400} /> : <ChevronDown size={16} color={colors.gray400} />}
+            </div>
+          </button>
+          {expanded === i && (
+            <div style={{ padding: '16px', background: colors.gray50, borderTop: `1px solid ${colors.gray200}` }}>
+              <p style={{ fontSize: '13px', color: colors.gray600, lineHeight: 1.5, marginBottom: '12px' }}>{r.description}</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '10px', color: colors.gray400, paddingTop: '8px', borderTop: `1px solid ${colors.gray200}` }}>
+                <span>{r.source}</span>
+                <span>Mis à jour : {r.date_maj}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ============================================================================
+// PAGE PRINCIPALE
+// ============================================================================
+
+const TABS = [
+  { id: 'prix', label: 'Prix marché', icon: Tag },
+  { id: 'concurrence', label: 'Concurrence', icon: Users },
+  { id: 'tendances', label: 'Tendances', icon: BarChart2 },
+  { id: 'reglementation', label: 'Réglementation', icon: ShieldCheck },
+] as const
+
+type TabId = typeof TABS[number]['id']
+
 export default function AnalyseSecteurPage() {
   const [activeTab, setActiveTab] = useState<TabId>('prix')
   const [langue, setLangue] = useState<Langue>('fr')
@@ -538,24 +692,52 @@ export default function AnalyseSecteurPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="fixed top-0 left-0 right-0 h-1 flex z-50">
-        <div className="flex-1 bg-[#008751]" />
-        <div className="flex-1 bg-[#FCD116]" />
-        <div className="flex-1 bg-[#E8112D]" />
+    <div style={{
+      minHeight: '100vh',
+      background: colors.white,
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+    }}>
+      {/* Barre tricolore béninoise */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '4px',
+        display: 'flex',
+        zIndex: 50,
+      }}>
+        <div style={{ flex: 1, background: colors.beninGreen }} />
+        <div style={{ flex: 1, background: colors.beninYellow }} />
+        <div style={{ flex: 1, background: colors.beninRed }} />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '32px 20px' }}>
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <Link href="/prestataire" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
+        <div style={{ marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <Link href="/prestataire" style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '13px',
+              color: colors.gray500,
+              textDecoration: 'none',
+            }}>
               <ArrowLeft size={16} /> Retour
             </Link>
             <select
               value={langue}
               onChange={(e) => setLangue(e.target.value as Langue)}
-              className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+              style={{
+                fontSize: '13px',
+                border: `1px solid ${colors.gray200}`,
+                borderRadius: '12px',
+                padding: '6px 12px',
+                background: colors.white,
+                color: colors.gray600,
+                outline: 'none',
+              }}
             >
               <option value="fr">Français</option>
               <option value="fon">Fon</option>
@@ -563,38 +745,41 @@ export default function AnalyseSecteurPage() {
             </select>
           </div>
 
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-medium mb-3">
-              <Sparkles size={12} /> Données mises à jour mensuellement
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-              Bonjour, <span className="text-[#1a3c6b]">{MOCK_PROFIL.prenom}</span>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+             
+            <h1 style={{
+              fontSize: 'clamp(28px, 5vw, 36px)',
+              fontWeight: 700,
+              fontFamily: "'Playfair Display', serif",
+              color: colors.deepBlue,
+              marginBottom: '8px',
+              letterSpacing: '-0.02em',
+            }}>
+              Bonjour, <span style={{ color: colors.deepBlue }}>{MOCK_PROFIL.prenom}</span>
             </h1>
-            <p className="text-gray-500">
-              Analyse du secteur <strong>{MOCK_PROFIL.secteur} / {MOCK_PROFIL.sous_secteur}</strong> à {MOCK_PROFIL.commune}
+            <p style={{ fontSize: '14px', color: colors.gray500 }}>
+              Analyse du secteur <strong style={{ color: colors.gray700 }}>{MOCK_PROFIL.secteur} / {MOCK_PROFIL.sous_secteur}</strong> à {MOCK_PROFIL.commune}
             </p>
           </div>
 
           {/* Message P1 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <MessageCircle size={18} className="text-gray-500 mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm text-gray-700">{currentLabels.p1}</p>
-                <p className="text-xs text-gray-500 mt-1">{currentLabels.source}</p>
-              </div>
-              <button
-                onClick={copyUssd}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors shrink-0"
-              >
-                <Download size={12} /> {currentLabels.ussd}
-              </button>
-            </div>
+          <div style={{
+            background: colors.gray50,
+            borderRadius: '20px',
+            padding: '16px',
+            border: `1px solid ${colors.gray200}`,
+          }}>
+            
           </div>
         </div>
 
         {/* Onglets */}
-        <div className="flex gap-1 border-b border-gray-200 mb-6">
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          borderBottom: `1px solid ${colors.gray200}`,
+          marginBottom: '24px',
+        }}>
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
             const Icon = tab.icon
@@ -602,15 +787,32 @@ export default function AnalyseSecteurPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-all relative
-                  ${isActive ? 'text-[#1a3c6b]' : 'text-gray-500 hover:text-gray-700'}
-                `}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: isActive ? colors.deepBlue : colors.gray500,
+                  position: 'relative',
+                }}
               >
                 <Icon size={16} />
                 {tab.label}
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1a3c6b] rounded-full" />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: -1,
+                    left: 0,
+                    right: 0,
+                    height: '2px',
+                    background: colors.deepBlue,
+                    borderRadius: '1px',
+                  }} />
                 )}
               </button>
             )
@@ -618,7 +820,12 @@ export default function AnalyseSecteurPage() {
         </div>
 
         {/* Contenu */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 md:p-8">
+        <div style={{
+          background: colors.white,
+          borderRadius: '24px',
+          border: `1px solid ${colors.gray200}`,
+          padding: '24px',
+        }}>
           {activeTab === 'prix' && <SectionPrix data={data.prix_marche} />}
           {activeTab === 'concurrence' && <SectionConcurrence data={data.concurrence} />}
           {activeTab === 'tendances' && <SectionTendances data={data.tendances} />}
@@ -626,8 +833,8 @@ export default function AnalyseSecteurPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400">
+        <div style={{ marginTop: '24px', textAlign: 'center' }}>
+          <p style={{ fontSize: '10px', color: colors.gray400 }}>
             Données fournies par BCEAO, ANPC, CEDEAO & relevés terrain BeniBiz
           </p>
         </div>
@@ -635,7 +842,19 @@ export default function AnalyseSecteurPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50">
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: colors.gray800,
+          color: colors.white,
+          padding: '8px 16px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 100,
+        }}>
           {toast}
         </div>
       )}

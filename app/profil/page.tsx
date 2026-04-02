@@ -150,6 +150,14 @@ export default function ProfilPage() {
           color: colors.deepBlue,
           bgColor: `${colors.deepBlue}10`
         },
+        { 
+          label: "Tendances", 
+          href: "/tendances", 
+          icon: TrendingUp, 
+          description: "Voir les tendances", 
+          color: colors.beninGreen,
+          bgColor: `${colors.beninGreen}10`
+        },
       ],
     },
     {
