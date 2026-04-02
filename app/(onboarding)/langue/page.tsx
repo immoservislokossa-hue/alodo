@@ -153,6 +153,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
   const [muted, setMuted] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [requireInteraction, setRequireInteraction] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const stepsList: Step[] = [
@@ -203,8 +204,9 @@ export default function OnboardingPage() {
       
       newAudio.play().catch((e) => {
         console.error("Erreur de lecture audio:", e);
-        // Ne déclenche pas la suite si annulé par l'utilisateur (ex: navigation rapide)
-        if (e.name !== 'AbortError') {
+        if (e.name === 'NotAllowedError') {
+          setRequireInteraction(true);
+        } else if (e.name !== 'AbortError') {
           playSequence(index + 1);
         }
       });
@@ -546,6 +548,7 @@ export default function OnboardingPage() {
                   placeholder="01 90 12 34 56"
                   style={{
                     width: "100%",
+                    boxSizing: "border-box",
                     padding: "16px 16px 16px 48px",
                     fontSize: 18,
                     border: `2px solid ${colors.gray200}`,
@@ -563,6 +566,7 @@ export default function OnboardingPage() {
                   placeholder="Mot de passe"
                   style={{
                     width: "100%",
+                    boxSizing: "border-box",
                     padding: "16px 48px 16px 20px",
                     fontSize: 18,
                     border: `2px solid ${colors.gray200}`,
@@ -612,7 +616,7 @@ export default function OnboardingPage() {
               value={form.phone}
               onChange={(e) => updateForm("phone", formatPhone(e.target.value))}
               placeholder="01 90 12 34 56"
-              style={{ fontSize: 24, padding: "16px 24px", textAlign: "center", border: `2px solid ${colors.gray200}`, borderRadius: 48, width: "100%", maxWidth: 300, marginBottom: 32 }}
+              style={{ fontSize: 24, padding: "16px 24px", textAlign: "center", border: `2px solid ${colors.gray200}`, borderRadius: 48, width: "100%", maxWidth: 300, marginBottom: 32, boxSizing: "border-box" }}
             />
             <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
               <button onClick={prevStep} style={{ background: colors.white, color: colors.deepBlue, border: `2px solid ${colors.deepBlue}`, borderRadius: 48, padding: "12px 28px", fontSize: 16, fontWeight: "bold", cursor: "pointer" }}>Retour</button>
@@ -936,6 +940,18 @@ export default function OnboardingPage() {
         </div>
       )}
       <div style={{ background: colors.white, borderRadius: 32, padding: 40, maxWidth: 600, width: "100%", boxShadow: "0 20px 40px rgba(0,0,0,0.08)" }}>
+        {requireInteraction && (
+          <button 
+            type="button"
+            onClick={() => { setRequireInteraction(false); playAudio(step); }}
+            style={{ width: "100%", background: colors.softGreen, color: colors.beninGreen, padding: "16px", borderRadius: "16px", marginBottom: "24px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", border: `2px dashed ${colors.beninGreen}`, transition: "transform 0.2s" }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
+            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+          >
+            <Volume2 size={24} />
+            <span style={{ fontWeight: "bold", fontSize: "16px" }}>Appuyez ici pour entendre l'assistance vocale</span>
+          </button>
+        )}
         {renderStep()}
       </div>
       <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", gap: 12, alignItems: "center", background: colors.white, padding: "8px 16px", borderRadius: 40, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>

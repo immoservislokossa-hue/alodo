@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" style={{ margin: 0, padding: 0 }}>
+    <html lang="fr" style={{ margin: 0, padding: 0 }} data-scroll-behavior="smooth">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
