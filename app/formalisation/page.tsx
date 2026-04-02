@@ -47,12 +47,12 @@ type Message = {
   timestamp: Date;
 };
 
-// ✅ FIX PROBLÈME 1: Validation simple et fiable
+// Validation simple et fiable
 const isValidAudio = (base64: string): boolean => {
   return !!base64 && base64.length > 1000;
 };
 
-// ✅ FIX PROBLÈME 2: Extraction robuste du texte
+// Extraction robuste du texte
 const extractTextFromResponse = (data: any): { text: string; steps: string; link: string | null } => {
   if (typeof data === 'object' && data !== null) {
     if (typeof data.text === 'string') {
@@ -107,23 +107,30 @@ export default function ChatbotPage() {
   const [loading, setLoading] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasSentQuery, setHasSentQuery] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Récupérer la query param ?q=...
+  // ✅ Récupérer la query param ?q=... et envoyer automatiquement
   useEffect(() => {
     const query = searchParams.get("q");
-    if (query && query.trim()) {
+    if (query && query.trim() && !hasSentQuery) {
+      // 1. Remplir l'input
       setInput(query);
-      // Envoyer automatiquement après un court délai
+      
+      // 2. Envoyer automatiquement après un court délai
       setTimeout(() => {
-        sendMessage({ skipUserMessage: true, preFilledQuestion: query });
+        sendMessage({ 
+          skipUserMessage: false, 
+          preFilledQuestion: query 
+        });
+        setHasSentQuery(true);
       }, 500);
     }
-  }, [searchParams]);
+  }, [searchParams, hasSentQuery]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -144,7 +151,7 @@ export default function ChatbotPage() {
       reader.readAsDataURL(file);
     });
 
-  // ✅ FIX PROBLÈME 2: Lecture audio robuste multi-format
+  // Lecture audio robuste multi-format
   const playAudio = (base64: string) => {
     if (isMuted || !base64) return;
 
@@ -156,7 +163,6 @@ export default function ChatbotPage() {
 
       setIsPlaying(true);
       
-      // Essayer différents formats
       const src = `data:audio/mp3;base64,${base64}`;
       const audio = new Audio(src);
       audioRef.current = audio;
@@ -167,7 +173,6 @@ export default function ChatbotPage() {
       };
 
       audio.onerror = () => {
-        // Fallback: essayer en WAV
         const fallbackSrc = `data:audio/wav;base64,${base64}`;
         const fallbackAudio = new Audio(fallbackSrc);
         audioRef.current = fallbackAudio;
@@ -188,7 +193,6 @@ export default function ChatbotPage() {
 
       audio.play().catch((err) => {
         console.log("Play failed, trying fallback:", err);
-        // Fallback immédiat
         const fallbackSrc = `data:audio/wav;base64,${base64}`;
         const fallbackAudio = new Audio(fallbackSrc);
         audioRef.current = fallbackAudio;
@@ -263,7 +267,7 @@ export default function ChatbotPage() {
       imageMimeType = image.type;
     }
 
-    // Message utilisateur (sauf si skip)
+    // Message utilisateur
     if (!skipUserMessage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -298,12 +302,10 @@ export default function ChatbotPage() {
 
       const rawData = await response.json();
       
-      // Debug audio
       console.log("AUDIO LENGTH:", rawData.audio?.length);
       
       const extracted = extractTextFromResponse(rawData);
       
-      // ✅ FIX PROBLÈME 3: Ne pas filtrer l'audio, laisser le frontend essayer
       const hasValidAudio = rawData.audio ? isValidAudio(rawData.audio) : false;
       
       if (hasValidAudio) {
@@ -322,15 +324,13 @@ export default function ChatbotPage() {
             text: extracted.text,
             steps: extracted.steps,
             link: extracted.link,
-            audio: rawData.audio || null, // ✅ On garde l'audio même si court
+            audio: rawData.audio || null,
             timestamp: new Date(),
           },
         ];
       });
 
-      // ✅ Autoplay si audio dispo et non muet
       if (rawData.audio && !isMuted) {
-        // Petit délai pour que le DOM soit prêt
         setTimeout(() => {
           playAudio(rawData.audio);
         }, 100);
@@ -515,7 +515,6 @@ export default function ChatbotPage() {
                     </div>
                   )}
 
-                  {/* TEXTE PRINCIPAL - NOIR */}
                   <div style={{
                     fontSize: "14px",
                     lineHeight: 1.5,
@@ -525,7 +524,6 @@ export default function ChatbotPage() {
                     {msg.text}
                   </div>
 
-                  {/* ÉTAPES - FOND JAUNE CLAIR, TEXTE GRIS */}
                   {msg.steps && (
                     <div style={{
                       marginTop: "12px",
@@ -551,7 +549,6 @@ export default function ChatbotPage() {
                     </div>
                   )}
 
-                  {/* LIEN - VERT */}
                   {msg.link && (
                     <a
                       href={msg.link}
@@ -577,7 +574,6 @@ export default function ChatbotPage() {
                     </a>
                   )}
 
-                  {/* AUDIO - bouton toujours présent si audio dispo */}
                   {msg.audio && (
                     <button
                       onClick={() => playAudio(msg.audio!)}
