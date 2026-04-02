@@ -80,56 +80,17 @@ export async function POST(req: Request) {
       message,
       imageBase64,
       imageMimeType,
-      audioBase64,
-      audioMimeType,
     } = await req.json();
 
     console.log("Inputs:", {
       text: !!message,
       image: !!imageBase64,
-      audio: !!audioBase64,
     });
 
     let finalUserText = message || "";
 
     // =========================
-    // 1. AUDIO → TEXTE
-    // =========================
-    if (audioBase64 && audioMimeType) {
-      console.log("🎤 Transcribing audio...");
-
-      try {
-        const audioRes = await generateWithRetry({
-          model: "gemini-2.5-flash",
-          contents: [
-            {
-              parts: [
-                {
-                  inlineData: {
-                    data: audioBase64,
-                    mimeType: audioMimeType,
-                  },
-                },
-                {
-                  text: "Transcris ce message vocal en français simple.",
-                },
-              ],
-            },
-          ],
-        });
-
-        finalUserText =
-          audioRes.candidates?.[0]?.content?.parts?.[0]?.text ||
-          finalUserText;
-
-        console.log("✅ Transcript:", finalUserText);
-      } catch {
-        console.log("❌ Audio transcription failed");
-      }
-    }
-
-    // =========================
-    // 2. BUILD INPUT
+    // BUILD INPUT
     // =========================
     const parts: any[] = [];
 
@@ -200,50 +161,11 @@ Réponds UNIQUEMENT en JSON valide sans markdown:
           "Oups, je réfléchis encore pour te donner une réponse fiable.",
         steps: "",
         link: null,
-        audio: null,
       });
     }
 
     // =========================
-    // 4. AUDIO
-    // =========================
-    let audio = null;
-
-    try {
-      const finalText = `${parsed.text} ${parsed.steps}`.trim();
-
-      console.log("🔊 Text for audio:", finalText);
-
-      if (finalText) {
-        console.log("🎧 Generating audio...");
-
-        const ttsRes = await generateWithRetry({
-          model: "gemini-2.5-flash-preview-tts",
-          contents: `Explique clairement en moins de 40 secondes: ${finalText}`,
-          config: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: "Kore",
-                },
-              },
-            },
-          },
-        });
-
-        audio =
-          ttsRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-
-        console.log(audio ? "✅ Audio OK" : "⚠️ Audio vide");
-      }
-    } catch (err) {
-      console.log("❌ Audio failed", err);
-      audio = null;
-    }
-
-    // =========================
-    // 5. RESPONSE
+    // RESPONSE
     // =========================
     return Response.json({
       text:
@@ -251,7 +173,6 @@ Réponds UNIQUEMENT en JSON valide sans markdown:
         "Je cherche encore une réponse fiable. Réessaie.",
       steps: parsed.steps || "",
       link: parsed.link || null,
-      audio,
     });
   } catch (error) {
     console.error("💥 Backend error:", error);
@@ -261,7 +182,6 @@ Réponds UNIQUEMENT en JSON valide sans markdown:
         "Oups, je consulte encore les informations officielles.",
       steps: "",
       link: null,
-      audio: null,
     });
   }
 }

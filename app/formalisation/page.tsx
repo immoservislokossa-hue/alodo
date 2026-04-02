@@ -8,8 +8,6 @@ import {
   Send, 
   Image as ImageIcon, 
   X, 
-  Volume2, 
-  VolumeX, 
   Loader2,
   ChevronRight,
   ExternalLink,
@@ -42,14 +40,8 @@ type Message = {
   text: string;
   steps?: string;
   link?: string | null;
-  audio?: string | null;
   image?: string | null;
   timestamp: Date;
-};
-
-// Validation simple et fiable
-const isValidAudio = (base64: string): boolean => {
-  return !!base64 && base64.length > 1000;
 };
 
 // Extraction robuste du texte
@@ -105,23 +97,17 @@ function ChatbotContent() {
   const [image, setImage] = useState<File | null>(null);
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [hasSentQuery, setHasSentQuery] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // ✅ Récupérer la query param ?q=... et envoyer automatiquement
   useEffect(() => {
     const query = searchParams.get("q");
     if (query && query.trim() && !hasSentQuery) {
-      // 1. Remplir l'input
       setInput(query);
-      
-      // 2. Envoyer automatiquement après un court délai
       setTimeout(() => {
         sendMessage({ 
           skipUserMessage: false, 
@@ -150,67 +136,6 @@ function ChatbotContent() {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-
-  // Lecture audio robuste multi-format
-  const playAudio = (base64: string) => {
-    if (isMuted || !base64) return;
-
-    try {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-
-      setIsPlaying(true);
-      
-      const src = `data:audio/mp3;base64,${base64}`;
-      const audio = new Audio(src);
-      audioRef.current = audio;
-
-      audio.onended = () => {
-        setIsPlaying(false);
-        audioRef.current = null;
-      };
-
-      audio.onerror = () => {
-        const fallbackSrc = `data:audio/wav;base64,${base64}`;
-        const fallbackAudio = new Audio(fallbackSrc);
-        audioRef.current = fallbackAudio;
-        fallbackAudio.onended = () => {
-          setIsPlaying(false);
-          audioRef.current = null;
-        };
-        fallbackAudio.onerror = () => {
-          console.log("Audio error, fallback failed");
-          setIsPlaying(false);
-          audioRef.current = null;
-        };
-        fallbackAudio.play().catch((err) => {
-          console.log("Fallback play failed:", err);
-          setIsPlaying(false);
-        });
-      };
-
-      audio.play().catch((err) => {
-        console.log("Play failed, trying fallback:", err);
-        const fallbackSrc = `data:audio/wav;base64,${base64}`;
-        const fallbackAudio = new Audio(fallbackSrc);
-        audioRef.current = fallbackAudio;
-        fallbackAudio.onended = () => {
-          setIsPlaying(false);
-          audioRef.current = null;
-        };
-        fallbackAudio.onerror = () => {
-          setIsPlaying(false);
-          audioRef.current = null;
-        };
-        fallbackAudio.play().catch(() => setIsPlaying(false));
-      });
-    } catch (err) {
-      console.log("Audio crash:", err);
-      setIsPlaying(false);
-    }
-  };
 
   const startRecording = async () => {
     try {
@@ -267,7 +192,6 @@ function ChatbotContent() {
       imageMimeType = image.type;
     }
 
-    // Message utilisateur
     if (!skipUserMessage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -301,18 +225,7 @@ function ChatbotContent() {
       });
 
       const rawData = await response.json();
-      
-      console.log("AUDIO LENGTH:", rawData.audio?.length);
-      
       const extracted = extractTextFromResponse(rawData);
-      
-      const hasValidAudio = rawData.audio ? isValidAudio(rawData.audio) : false;
-      
-      if (hasValidAudio) {
-        console.log("✅ Audio valide, longueur:", rawData.audio.length);
-      } else {
-        console.log("⚠️ Audio trop court ou absent");
-      }
 
       setMessages((prev) => {
         const filtered = prev.filter(m => m.id !== waitingMessage.id);
@@ -324,17 +237,10 @@ function ChatbotContent() {
             text: extracted.text,
             steps: extracted.steps,
             link: extracted.link,
-            audio: rawData.audio || null,
             timestamp: new Date(),
           },
         ];
       });
-
-      if (rawData.audio && !isMuted) {
-        setTimeout(() => {
-          playAudio(rawData.audio);
-        }, 100);
-      }
     } catch (error) {
       console.error("Erreur:", error);
       setMessages((prev) => {
@@ -360,15 +266,6 @@ function ChatbotContent() {
     setImage(null);
   };
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-    if (!isMuted && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setIsPlaying(false);
-    }
-  };
-
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   };
@@ -376,11 +273,11 @@ function ChatbotContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: `linear-gradient(135deg, ${colors.gray100} 0%, ${colors.white} 100%)`,
+      background: colors.white,
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      padding: "20px",
+      padding: "12px",
       fontFamily: "system-ui, -apple-system, sans-serif",
     }}>
       {/* Barre tricolore */}
@@ -400,47 +297,39 @@ function ChatbotContent() {
 
       <div style={{
         width: "100%",
-        maxWidth: "800px",
-        height: "85vh",
+        maxWidth: "100%",
+        height: "calc(100vh - 24px)",
         background: colors.white,
-        borderRadius: "32px",
+        borderRadius: "24px",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         border: `1px solid ${colors.gray200}`,
       }}>
         {/* HEADER */}
         <div style={{
-          padding: "20px 24px",
+          padding: "16px 20px",
           background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
           color: colors.white,
+          flexShrink: 0,
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>
-                Assistant Admin Bénin
-              </h2>
-              <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.8 }}>
-                Texte, image ou vocal • Réponses audio
-              </p>
-            </div>
-            <button
-              onClick={toggleMute}
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                border: "none",
-                borderRadius: "40px",
-                padding: "8px",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: colors.white,
-              }}
-            >
-              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
+          <div>
+            <h2 style={{ 
+              margin: 0, 
+              fontSize: "18px", 
+              fontWeight: 700,
+              fontFamily: "'Playfair Display', serif"
+            }}>
+              Assistant Admin Bénin
+            </h2>
+            <p style={{ 
+              margin: "4px 0 0", 
+              fontSize: "11px", 
+              opacity: 0.8 
+            }}>
+              Texte, image ou vocal
+            </p>
           </div>
         </div>
 
@@ -448,35 +337,35 @@ function ChatbotContent() {
         <div style={{
           flex: 1,
           overflowY: "auto",
-          padding: "24px",
+          padding: "16px",
           display: "flex",
           flexDirection: "column",
-          gap: "16px",
+          gap: "12px",
           background: colors.gray50,
         }}>
           {messages.length === 0 ? (
             <div style={{
               textAlign: "center",
-              padding: "48px 24px",
+              padding: "40px 20px",
               color: colors.gray400,
             }}>
               <div style={{
-                width: "64px",
-                height: "64px",
+                width: "56px",
+                height: "56px",
                 background: `${colors.deepBlue}10`,
-                borderRadius: "32px",
+                borderRadius: "28px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 margin: "0 auto 16px",
               }}>
-                <Headphones size={32} color={colors.deepBlue} />
+                <Headphones size= {28} color={colors.deepBlue} />
               </div>
               <p style={{ fontSize: "14px", margin: 0 }}>
                 Posez votre question par texte, image ou vocal
               </p>
-              <p style={{ fontSize: "12px", marginTop: "8px" }}>
-                Je vous répondrai avec un message vocal
+              <p style={{ fontSize: "12px", marginTop: "8px", color: colors.gray500 }}>
+                Je vous répondrai avec des informations précises
               </p>
             </div>
           ) : (
@@ -490,13 +379,13 @@ function ChatbotContent() {
               >
                 <div
                   style={{
-                    maxWidth: "80%",
+                    maxWidth: "85%",
                     background: msg.type === "user" ? colors.deepBlue : colors.white,
                     color: msg.type === "user" ? colors.white : colors.gray800,
-                    padding: "14px 18px",
-                    borderRadius: "20px",
-                    borderBottomRightRadius: msg.type === "user" ? "4px" : "20px",
-                    borderBottomLeftRadius: msg.type === "user" ? "20px" : "4px",
+                    padding: "12px 16px",
+                    borderRadius: "18px",
+                    borderBottomRightRadius: msg.type === "user" ? "4px" : "18px",
+                    borderBottomLeftRadius: msg.type === "user" ? "18px" : "4px",
                     boxShadow: msg.type === "bot" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
                     border: msg.type === "bot" ? `1px solid ${colors.gray200}` : "none",
                   }}
@@ -507,7 +396,7 @@ function ChatbotContent() {
                         src={msg.image}
                         alt="Uploaded"
                         style={{
-                          maxWidth: "200px",
+                          maxWidth: "100%",
                           maxHeight: "150px",
                           borderRadius: "12px",
                         }}
@@ -519,17 +408,17 @@ function ChatbotContent() {
                     fontSize: "14px",
                     lineHeight: 1.5,
                     whiteSpace: "pre-wrap",
-                    color: colors.gray800,
+                    wordBreak: "break-word",
                   }}>
                     {msg.text}
                   </div>
 
                   {msg.steps && (
                     <div style={{
-                      marginTop: "12px",
-                      padding: "12px",
+                      marginTop: "10px",
+                      padding: "10px",
                       background: `${colors.beninYellow}15`,
-                      borderRadius: "12px",
+                      borderRadius: "10px",
                       borderLeft: `3px solid ${colors.beninYellow}`,
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
@@ -558,44 +447,20 @@ function ChatbotContent() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        marginTop: "12px",
+                        marginTop: "10px",
                         color: colors.beninGreen,
                         textDecoration: "none",
-                        fontSize: "13px",
+                        fontSize: "12px",
                         fontWeight: 500,
-                        padding: "6px 12px",
+                        padding: "5px 10px",
                         background: `${colors.beninGreen}10`,
-                        borderRadius: "20px",
+                        borderRadius: "16px",
                       }}
                     >
                       <ExternalLink size={12} />
                       Voir le lien officiel
                       <ChevronRight size={12} />
                     </a>
-                  )}
-
-                  {msg.audio && (
-                    <button
-                      onClick={() => playAudio(msg.audio!)}
-                      disabled={isMuted}
-                      style={{
-                        marginTop: "12px",
-                        background: `${colors.beninGreen}10`,
-                        border: "none",
-                        color: colors.beninGreen,
-                        padding: "6px 12px",
-                        borderRadius: "20px",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        cursor: isMuted ? "not-allowed" : "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                      }}
-                    >
-                      <Volume2 size={14} />
-                      Écouter la réponse
-                    </button>
                   )}
 
                   <div style={{
@@ -616,8 +481,8 @@ function ChatbotContent() {
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
               <div style={{
                 background: colors.white,
-                padding: "14px 18px",
-                borderRadius: "20px",
+                padding: "12px 16px",
+                borderRadius: "18px",
                 border: `1px solid ${colors.gray200}`,
                 display: "flex",
                 alignItems: "center",
@@ -629,49 +494,28 @@ function ChatbotContent() {
             </div>
           )}
 
-          {isPlaying && (
-            <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <div style={{
-                background: colors.white,
-                padding: "10px 16px",
-                borderRadius: "20px",
-                border: `1px solid ${colors.gray200}`,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}>
-                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
-                  <div style={{ width: "3px", height: "12px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite" }} />
-                  <div style={{ width: "3px", height: "20px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite 0.1s" }} />
-                  <div style={{ width: "3px", height: "16px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite 0.2s" }} />
-                  <div style={{ width: "3px", height: "24px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite 0.3s" }} />
-                </div>
-                <span style={{ fontSize: "12px", color: colors.gray500 }}>Lecture audio en cours...</span>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
 
         {/* INPUT */}
         <div style={{
-          padding: "16px 20px",
+          padding: "12px 16px",
           borderTop: `1px solid ${colors.gray200}`,
           background: colors.white,
+          flexShrink: 0,
         }}>
           {image && (
             <div style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              padding: "6px 12px 6px 8px",
+              padding: "4px 10px 4px 8px",
               background: colors.gray100,
-              borderRadius: "40px",
-              marginBottom: "12px",
+              borderRadius: "32px",
+              marginBottom: "10px",
             }}>
-              <ImageIcon size={16} color={colors.gray500} />
-              <span style={{ fontSize: "12px", color: colors.gray600 }}>{image.name}</span>
+              <ImageIcon size={14} color={colors.gray500} />
+              <span style={{ fontSize: "11px", color: colors.gray600 }}>{image.name}</span>
               <button
                 onClick={removeImage}
                 style={{
@@ -679,25 +523,27 @@ function ChatbotContent() {
                   border: "none",
                   cursor: "pointer",
                   padding: "2px",
+                  display: "flex",
                 }}
               >
-                <X size={14} color={colors.gray400} />
+                <X size={12} color={colors.gray400} />
               </button>
             </div>
           )}
 
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <label
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "22px",
+                width: "40px",
+                height: "40px",
+                borderRadius: "20px",
                 background: colors.gray100,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
                 border: `1px solid ${colors.gray200}`,
+                flexShrink: 0,
               }}
             >
               <input
@@ -706,7 +552,7 @@ function ChatbotContent() {
                 onChange={(e) => setImage(e.target.files?.[0] || null)}
                 style={{ display: "none" }}
               />
-              <ImageIcon size={18} color={colors.gray500} />
+              <ImageIcon size={16} color={colors.gray500} />
             </label>
 
             <input
@@ -721,13 +567,14 @@ function ChatbotContent() {
               placeholder="Posez votre question..."
               style={{
                 flex: 1,
-                padding: "12px 16px",
-                borderRadius: "24px",
+                padding: "10px 14px",
+                borderRadius: "20px",
                 border: `1px solid ${colors.gray200}`,
                 fontSize: "14px",
                 outline: "none",
                 fontFamily: "inherit",
                 background: colors.gray50,
+                minWidth: 0,
               }}
               onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
               onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
@@ -737,9 +584,9 @@ function ChatbotContent() {
               <button
                 onClick={startRecording}
                 style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "22px",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "20px",
                   background: colors.beninRed,
                   color: colors.white,
                   border: "none",
@@ -747,17 +594,18 @@ function ChatbotContent() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                 }}
               >
-                <Mic size={18} />
+                <Mic size={16} />
               </button>
             ) : (
               <button
                 onClick={stopRecording}
                 style={{
-                  width: "44px",
-                  height: "44px",
-                  borderRadius: "22px",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "20px",
                   background: colors.beninYellow,
                   color: colors.deepBlue,
                   border: "none",
@@ -765,10 +613,11 @@ function ChatbotContent() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  flexShrink: 0,
                   animation: "pulseBg 1s infinite",
                 }}
               >
-                <MicOff size={18} />
+                <MicOff size={16} />
               </button>
             )}
 
@@ -776,9 +625,9 @@ function ChatbotContent() {
               onClick={() => sendMessage()}
               disabled={(!input && !image) || loading}
               style={{
-                width: "44px",
-                height: "44px",
-                borderRadius: "22px",
+                width: "40px",
+                height: "40px",
+                borderRadius: "20px",
                 background: (!input && !image) || loading ? colors.gray300 : colors.beninGreen,
                 color: colors.white,
                 border: "none",
@@ -786,18 +635,19 @@ function ChatbotContent() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexShrink: 0,
               }}
             >
-              {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={18} />}
+              {loading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
             </button>
           </div>
 
           <p style={{
-            fontSize: "10px",
+            fontSize: "9px",
             color: colors.gray400,
-            margin: "10px 0 0 12px",
+            margin: "8px 0 0 12px",
           }}>
-            Envoyez un texte, une image ou un message vocal • Réponse audio automatique
+            Envoyez un texte, une image ou un message vocal
           </p>
         </div>
       </div>
@@ -805,10 +655,6 @@ function ChatbotContent() {
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
-          50% { opacity: 1; transform: scaleY(1); }
         }
         @keyframes pulseBg {
           0%, 100% { opacity: 1; }
@@ -826,21 +672,19 @@ export default function ChatbotPage() {
       justifyContent: "center",
       alignItems: "center",
       minHeight: "100vh",
-      background: `linear-gradient(135deg, #1a3c6b 0%, #0e2a4a 100%)`,
-      padding: "20px",
+      background: colors.white,
+      padding: "0",
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
     }}>
       <Suspense fallback={
         <div style={{
           width: "100%",
-          maxWidth: "800px",
-          height: "85vh",
-          background: "#FFFFFF",
-          borderRadius: "32px",
+          maxWidth: "100%",
+          height: "100vh",
+          background: colors.white,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
         }}>
           <Loader2 size={32} style={{ animation: "spin 1s linear infinite" }} color="#008751" />
         </div>
