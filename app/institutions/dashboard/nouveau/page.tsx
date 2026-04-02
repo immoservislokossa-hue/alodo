@@ -314,6 +314,7 @@ export default function InstitutionNewPage() {
   }
 
   async function handleSubmit() {
+    console.log("[handleSubmit] Starting...");
     if (!form.titre.trim() || !form.description.trim()) {
       setError("Ajoute un titre et une description.");
       return;
@@ -324,6 +325,7 @@ export default function InstitutionNewPage() {
       return;
     }
 
+    console.log("[handleSubmit] Validation passed, starting submission...");
     setSaving(true);
     setError("");
     setSuccess("");
@@ -333,6 +335,7 @@ export default function InstitutionNewPage() {
         data: { user },
         error: authError,
       } = await supabase.auth.getUser();
+      console.log("[handleSubmit] Auth user:", user?.id, "Error:", authError);
 
       if (authError) throw authError;
       if (!user) {
@@ -345,6 +348,7 @@ export default function InstitutionNewPage() {
         .select("id, role, type")
         .eq("user_id", user.id)
         .single();
+      console.log("[handleSubmit] Profile:", profile, "Error:", profileError);
 
       if (profileError) throw profileError;
       if (!profile?.id) throw new Error("Profil introuvable.");
@@ -376,26 +380,53 @@ export default function InstitutionNewPage() {
         contact_email: form.contact_email.trim() || null,
         statut: form.statut,
       };
+      console.log("[handleSubmit] Payload prepared:", payload);
+      console.log("[handleSubmit] Payload types:", {
+        institution_profile_id: typeof profile.id,
+        titre: typeof form.titre,
+        types_concernes: Array.isArray(form.types_concernes),
+        montant_min_fcfa: typeof toNullableNumber(form.montant_min_fcfa),
+      });
 
       const { data: insertedData, error: insertError } = await supabase
         .from("post_institutions")
         .insert(payload)
         .select("id");
-
-      if (insertError) throw insertError;
+      console.log("[handleSubmit] Insert result - Data:", insertedData, "Error:", insertError);
+      
+      if (insertError) {
+        console.error("[handleSubmit] Insert error details:", {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+        });
+        throw insertError;
+      }
       if (!insertedData || insertedData.length === 0) throw new Error("Post creation failed");
 
       const postId = insertedData[0].id;
+      console.log("[handleSubmit] Post created with ID:", postId);
 
       // If audios were generated, upload them
       if (audios) {
+        console.log("[handleSubmit] Uploading audios for post:", postId);
         await uploadAudios(postId);
       }
 
+      console.log("[handleSubmit] Post creation successful!");
       setSuccess("Post cree avec succes.");
       setForm(defaultForm);
       setTimeout(() => router.push("/institutions/dashboard"), 700);
     } catch (submitError) {
+      console.error("[handleSubmit] Error:", submitError);
+      console.error("[handleSubmit] Error details:", {
+        message: submitError instanceof Error ? submitError.message : String(submitError),
+        stack: submitError instanceof Error ? submitError.stack : undefined,
+        code: (submitError as any)?.code,
+        hint: (submitError as any)?.hint,
+        details: (submitError as any)?.details,
+      });
       setError(
         submitError instanceof Error ? submitError.message : "Creation impossible."
       );

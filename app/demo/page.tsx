@@ -77,6 +77,15 @@ export default function USSDDemo() {
     return () => clearInterval(timer);
   }, []);
 
+  // Auto-lancer l'appel quand 202 est composé
+  useEffect(() => {
+    if (dialInput === "202" && state === "dial") {
+      setTimeout(() => {
+        makeCall();
+      }, 300);
+    }
+  }, [dialInput, state]);
+
   // Timer d'appel
   useEffect(() => {
     if (state === "call") {
@@ -319,33 +328,33 @@ export default function USSDDemo() {
           </div>
 
           {/* Logo Alɔdó */}
-          <div style={{ textAlign: "center", padding: "20px 20px 12px" }}>
+          <div style={{ textAlign: "center", padding: "16px 20px 8px" }}>
             <div style={{
-              width: "56px",
-              height: "56px",
+              width: "48px",
+              height: "48px",
               background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
-              borderRadius: "18px",
+              borderRadius: "16px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 12px",
-              boxShadow: "0 8px 20px rgba(26, 60, 107, 0.2)",
+              margin: "0 auto 8px",
+              boxShadow: "0 6px 16px rgba(26, 60, 107, 0.2)",
             }}>
-              <span style={{ fontSize: "28px", fontWeight: "bold", color: colors.white }}>A</span>
+              <span style={{ fontSize: "24px", fontWeight: "bold", color: colors.white }}>A</span>
             </div>
             <h1 style={{
-              fontSize: "22px",
+              fontSize: "18px",
               fontWeight: 700,
               fontFamily: "'Playfair Display', serif",
               color: colors.deepBlue,
-              marginBottom: "2px",
+              marginBottom: "0px",
               letterSpacing: "-0.5px",
             }}>Alɔdó</h1>
-            <p style={{ fontSize: "11px", color: colors.gray400, textTransform: "uppercase", letterSpacing: "1px" }}>Service vocal</p>
+            <p style={{ fontSize: "10px", color: colors.gray400, textTransform: "uppercase", letterSpacing: "0.5px", margin: "2px 0 0" }}>Service vocal</p>
           </div>
 
           {/* Numéro composé */}
-          <div style={{ textAlign: "center", padding: "12px 20px" }}>
+          <div style={{ textAlign: "center", padding: "8px 20px" }}>
             <div style={{
               fontSize: "32px",
               fontWeight: 600,
@@ -353,24 +362,28 @@ export default function USSDDemo() {
               color: colors.gray800,
               letterSpacing: "6px",
               background: colors.gray50,
-              padding: "14px",
+              padding: "12px",
               borderRadius: "20px",
               border: `1px solid ${colors.gray200}`,
+              minHeight: "52px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}>
               {dialInput || "___"}
             </div>
-            <p style={{ fontSize: "11px", color: colors.gray400, marginTop: "10px" }}>
-              Composez <strong style={{ color: colors.beninGreen }}>202</strong> pour démarrer
+            <p style={{ fontSize: "10px", color: colors.gray400, marginTop: "6px" }}>
+              Composez <strong style={{ color: colors.beninGreen }}>202</strong>
             </p>
           </div>
 
           {/* Clavier */}
-          <div style={{ padding: "12px 20px 20px" }}>
+          <div style={{ padding: "8px 20px 16px" }}>
             <div style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "10px",
-              marginBottom: "16px",
+              gap: "8px",
+              marginBottom: "12px",
             }}>
               {keypadButtons.map((row, rowIndex) => (
                 <div key={rowIndex} style={{ display: "contents" }}>
@@ -380,17 +393,17 @@ export default function USSDDemo() {
                       onClick={() => setDialInput(prev => prev.length < 3 ? prev + key : prev)}
                       style={{
                         aspectRatio: "1",
-                        borderRadius: "60px",
+                        borderRadius: "50px",
                         background: colors.white,
-                        border: `1px solid ${colors.gray200}`,
-                        fontSize: "26px",
+                        border: `1px solid ${colors.gray300}`,
+                        fontSize: "20px",
                         fontWeight: 500,
                         color: colors.gray700,
                         cursor: "pointer",
                         transition: "all 0.1s ease",
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
                       }}
-                      onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.96)"}
+                      onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.95)"}
                       onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                       onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
                     >
@@ -401,46 +414,23 @@ export default function USSDDemo() {
               ))}
             </div>
 
-            <div style={{ display: "flex", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <button
                 onClick={() => setDialInput(prev => prev.slice(0, -1))}
                 style={{
                   flex: 1,
-                  padding: "12px",
-                  borderRadius: "40px",
+                  padding: "10px",
+                  borderRadius: "30px",
                   background: colors.gray100,
                   border: `1px solid ${colors.gray200}`,
-                  fontSize: "14px",
+                  fontSize: "12px",
                   fontWeight: 500,
                   color: colors.gray600,
                   cursor: "pointer",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                 }}
               >
                 Effacer
-              </button>
-              <button
-                onClick={makeCall}
-                disabled={dialInput !== "202"}
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  borderRadius: "40px",
-                  background: dialInput === "202" ? colors.beninGreen : colors.gray200,
-                  border: "none",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: colors.white,
-                  cursor: dialInput === "202" ? "pointer" : "not-allowed",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  boxShadow: dialInput === "202" ? "0 4px 12px rgba(0, 135, 81, 0.3)" : "none",
-                }}
-              >
-                <Phone size={16} />
-                Appeler
               </button>
             </div>
           </div>
