@@ -1,29 +1,40 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Mic, MicOff, Send, Image, X, Volume2, VolumeX, Loader2, ArrowLeft } from "lucide-react";
 
-type Message = {
-  id: string;
-  type: "user" | "bot";
-  text: string;
-  images?: string[];
-  timestamp: Date;
+// Couleurs du branding Alɔdó
+const colors = {
+  white: "#FFFFFF",
+  deepBlue: "#1a3c6b",
+  deepBlueDark: "#0e2a4a",
+  beninGreen: "#008751",
+  beninYellow: "#FCD116",
+  beninRed: "#E8112D",
+  gray50: "#F9FAFB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+  gray300: "#D1D5DB",
+  gray400: "#9CA3AF",
+  gray500: "#6B7280",
+  gray600: "#4B5563",
+  gray700: "#374151",
+  gray800: "#1F2937",
 };
 
 export default function ChatbotPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "bot",
-      text: "Bonjour! Je suis votre assistant. Vous pouvez écrire vos messages et partager des images. Comment puis-je vous aider?",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [image, setImage] = useState<File | null>(null);
+  const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,293 +44,459 @@ export default function ChatbotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const handleImageSelect = (files: FileList | null) => {
-    if (!files) return;
-    setSelectedImages(Array.from(files));
+  const toBase64 = (file: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        resolve(base64.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const playAudio = (base64: string) => {
+    if (isMuted) return;
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    
+    setIsPlaying(true);
+    const audio = new Audio(`data:audio/wav;base64,${base64}`);
+    audioRef.current = audio;
+    
+    audio.onended = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+    
+    audio.onerror = () => {
+      setIsPlaying(false);
+      audioRef.current = null;
+    };
+    
+    audio.play().catch(() => {
+      setIsPlaying(false);
+    });
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() && selectedImages.length === 0) return;
+  // =========================
+  // ENREGISTREMENT VOCAL
+  // =========================
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      text: input,
-      images: selectedImages.map((file) => URL.createObjectURL(file)),
-      timestamp: new Date(),
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = mediaRecorder;
+
+    audioChunksRef.current = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunksRef.current.push(event.data);
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setSelectedImages([]);
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, {
+        type: "audio/webm",
+      });
+
+      const base64 = await toBase64(audioBlob);
+
+      sendMessage({ audioBase64: base64, mimeType: "audio/webm" });
+    };
+
+    mediaRecorder.start();
+    setRecording(true);
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  };
+
+  // =========================
+  // ENVOI MESSAGE
+  // =========================
+  const sendMessage = async ({
+    audioBase64 = null,
+    mimeType = null,
+  }: any = {}) => {
+    if (!input && !image && !audioBase64) return;
+
     setLoading(true);
 
-    // Simulated bot response
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
+    let imageBase64 = null;
+    if (image) {
+      imageBase64 = await toBase64(image);
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        type: "user",
+        text: input || (audioBase64 ? "🎤 Message vocal envoyé" : ""),
+        image: image ? URL.createObjectURL(image) : null,
+      },
+      {
         type: "bot",
-        text: `Vous avez écrit: "${userMessage.text}"${selectedImages.length > 0 ? ` et partagé ${selectedImages.length} image(s).` : ""}`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botMessage]);
-      setLoading(false);
-    }, 500);
+        text: "Un instant, je vérifie les informations...",
+      },
+    ]);
+
+    const res = await fetch("/api/gemini/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        message: input,
+        imageBase64,
+        imageMimeType: image?.type,
+        audioBase64,
+        audioMimeType: mimeType,
+      }),
+    });
+
+    const data = await res.json();
+
+    setMessages((prev) => {
+      const filtered = prev.filter((_, i) => i !== prev.length - 1);
+      return [
+        ...filtered,
+        {
+          type: "bot",
+          text: data.text,
+          steps: data.steps,
+          link: data.link,
+          audio: data.audio,
+        },
+      ];
+    });
+
+    if (data.audio) playAudio(data.audio);
+
+    setInput("");
+    setImage(null);
+    setLoading(false);
+  };
+
+  const removeImage = () => {
+    setImage(null);
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    if (!isMuted && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setIsPlaying(false);
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f5f5f5",
-        padding: "20px",
-        fontFamily:
-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "800px",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          height: "90vh",
-          backgroundColor: "#fff",
-          borderRadius: "12px",
-          boxShadow: "0 10px 40px rgba(0, 0, 0, 0.1)",
-          overflow: "hidden",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: "20px",
-            borderBottom: "1px solid #e0e0e0",
-            backgroundColor: "#1d9e75",
-            color: "#fff",
-          }}
-        >
-          <h1 style={{ margin: 0, fontSize: "20px", fontWeight: 600 }}>
-            Assistant Conversationnel
-          </h1>
-          <p style={{ margin: "5px 0 0", fontSize: "14px", opacity: 0.9 }}>
-            Conversation textuelle avec support d'images
-          </p>
-        </div>
+    <div style={{
+      minHeight: "100vh",
+      background: `linear-gradient(135deg, ${colors.gray100} 0%, ${colors.white} 100%)`,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "20px",
+      fontFamily: "system-ui, -apple-system, sans-serif",
+    }}>
+      {/* Barre tricolore béninoise */}
+      <div style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "4px",
+        display: "flex",
+        zIndex: 50,
+      }}>
+        <div style={{ flex: 1, background: colors.beninGreen }} />
+        <div style={{ flex: 1, background: colors.beninYellow }} />
+        <div style={{ flex: 1, background: colors.beninRed }} />
+      </div>
 
-        {/* Messages Area */}
-        <div
-          style={{
-            flex: 1,
-            overflow: "auto",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
-        >
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              style={{
-                display: "flex",
-                justifyContent: message.type === "user" ? "flex-end" : "flex-start",
-                marginBottom: "12px",
-              }}
-            >
-              <div
-                style={{
-                  maxWidth: "70%",
-                  backgroundColor: message.type === "user" ? "#1d9e75" : "#e8e8e8",
-                  color: message.type === "user" ? "#fff" : "#333",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                  wordWrap: "break-word",
-                  whiteSpace: "pre-wrap",
-                }}
-              >
-                <p style={{ margin: 0, marginBottom: message.images?.length ? "8px" : 0 }}>
-                  {message.text}
-                </p>
-                {message.images && message.images.length > 0 && (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "8px" }}>
-                    {message.images.map((img, idx) => (
-                      <img
-                        key={idx}
-                        src={img}
-                        alt={`shared-${idx}`}
-                        style={{
-                          maxWidth: "150px",
-                          maxHeight: "150px",
-                          borderRadius: "8px",
-                          marginTop: "8px",
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-                <div
-                  style={{
-                    fontSize: "12px",
-                    opacity: 0.7,
-                    marginTop: "6px",
-                  }}
-                >
-                  {message.timestamp.toLocaleTimeString("fr-FR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              </div>
+      <div style={{
+        width: "100%",
+        maxWidth: "800px",
+        height: "85vh",
+        background: colors.white,
+        borderRadius: "32px",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.15)",
+        border: `1px solid ${colors.gray200}`,
+      }}>
+        {/* HEADER */}
+        <div style={{
+          padding: "20px 24px",
+          background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
+          color: colors.white,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>
+                Assistant Admin Bénin
+              </h2>
+              <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.8 }}>
+                Texte, image ou vocal • Réponses audio
+              </p>
             </div>
-          ))}
-          {loading && (
-            <div style={{ display: "flex", justifyContent: "flex-start" }}>
-              <div
-                style={{
-                  backgroundColor: "#e8e8e8",
-                  color: "#333",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "4px",
-                    alignItems: "center",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "8px",
-                      animation: "blink 1.4s infinite",
-                    }}
-                  >
-                    ●
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "8px",
-                      animation: "blink 1.4s infinite",
-                      animationDelay: "0.2s",
-                    }}
-                  >
-                    ●
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "8px",
-                      animation: "blink 1.4s infinite",
-                      animationDelay: "0.4s",
-                    }}
-                  >
-                    ●
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div
-          style={{
-            borderTop: "1px solid #e0e0e0",
-            padding: "16px",
-            backgroundColor: "#fafafa",
-          }}
-        >
-          {selectedImages.length > 0 && (
-            <div
-              style={{
-                marginBottom: "12px",
-                display: "flex",
-                gap: "8px",
-                flexWrap: "wrap",
-              }}
-            >
-              {selectedImages.map((file, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    position: "relative",
-                    width: "60px",
-                    height: "60px",
-                    borderRadius: "8px",
-                    overflow: "hidden",
-                    backgroundColor: "#e8e8e8",
-                  }}
-                >
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`preview-${idx}`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                  <button
-                    onClick={() =>
-                      setSelectedImages(selectedImages.filter((_, i) => i !== idx))
-                    }
-                    style={{
-                      position: "absolute",
-                      top: "-8px",
-                      right: "-8px",
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      backgroundColor: "#ff4444",
-                      color: "#fff",
-                      border: "none",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              alignItems: "flex-end",
-            }}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => handleImageSelect(e.target.files)}
-              multiple
-              accept="image/*"
-              style={{ display: "none" }}
-            />
-
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={toggleMute}
               style={{
-                padding: "10px 14px",
-                backgroundColor: "#f0f0f0",
-                border: "1px solid #d0d0d0",
-                borderRadius: "8px",
+                background: "rgba(255,255,255,0.15)",
+                border: "none",
+                borderRadius: "40px",
+                padding: "8px",
                 cursor: "pointer",
-                fontSize: "16px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                color: colors.white,
+                transition: "all 0.2s",
               }}
-              title="Ajouter des images"
+              aria-label={isMuted ? "Activer le son" : "Couper le son"}
             >
-              📷
+              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
+          </div>
+        </div>
+
+        {/* MESSAGES */}
+        <div style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          background: colors.gray50,
+        }}>
+          {messages.length === 0 ? (
+            <div style={{
+              textAlign: "center",
+              padding: "48px 24px",
+              color: colors.gray400,
+            }}>
+              <div style={{
+                width: "64px",
+                height: "64px",
+                background: `${colors.deepBlue}10`,
+                borderRadius: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+              }}>
+                <Mic size={32} color={colors.deepBlue} />
+              </div>
+              <p style={{ fontSize: "14px", margin: 0 }}>
+                Posez votre question par texte, image ou vocal
+              </p>
+              <p style={{ fontSize: "12px", marginTop: "8px" }}>
+                Je vous répondrai avec un message vocal
+              </p>
+            </div>
+          ) : (
+            messages.map((m, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: m.type === "user" ? "flex-end" : "flex-start",
+                }}
+              >
+                <div
+                  style={{
+                    maxWidth: "80%",
+                    background: m.type === "user" ? colors.deepBlue : colors.white,
+                    color: m.type === "user" ? colors.white : colors.gray800,
+                    padding: "14px 18px",
+                    borderRadius: "20px",
+                    borderBottomRightRadius: m.type === "user" ? "4px" : "20px",
+                    borderBottomLeftRadius: m.type === "user" ? "20px" : "4px",
+                    boxShadow: m.type === "bot" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
+                    border: m.type === "bot" ? `1px solid ${colors.gray200}` : "none",
+                  }}
+                >
+                  {m.image && (
+                    <div style={{ marginBottom: "8px" }}>
+                      <img
+                        src={m.image}
+                        alt="Uploaded"
+                        style={{
+                          maxWidth: "200px",
+                          maxHeight: "150px",
+                          borderRadius: "12px",
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div style={{ fontSize: "14px", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                    {m.text}
+                  </div>
+
+                  {m.steps && (
+                    <div style={{
+                      marginTop: "10px",
+                      padding: "10px",
+                      background: colors.gray50,
+                      borderRadius: "12px",
+                      fontSize: "13px",
+                    }}>
+                      {m.steps}
+                    </div>
+                  )}
+
+                  {m.link && (
+                    <a
+                      href={m.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: "inline-block",
+                        marginTop: "10px",
+                        color: colors.beninGreen,
+                        textDecoration: "none",
+                        fontSize: "13px",
+                        fontWeight: 500,
+                      }}
+                    >
+                      Voir le lien →
+                    </a>
+                  )}
+
+                  {m.audio && (
+                    <button
+                      onClick={() => playAudio(m.audio)}
+                      disabled={isMuted}
+                      style={{
+                        marginTop: "10px",
+                        background: `${colors.beninGreen}10`,
+                        border: "none",
+                        color: colors.beninGreen,
+                        padding: "6px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <Volume2 size={14} />
+                      Écouter la réponse
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+
+          {loading && (
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <div style={{
+                background: colors.white,
+                padding: "14px 18px",
+                borderRadius: "20px",
+                border: `1px solid ${colors.gray200}`,
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}>
+                <Loader2 size={18} color={colors.beninGreen} style={{ animation: "spin 1s linear infinite" }} />
+                <span style={{ fontSize: "13px", color: colors.gray500 }}>L'assistant réfléchit...</span>
+              </div>
+            </div>
+          )}
+
+          {isPlaying && (
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <div style={{
+                background: colors.white,
+                padding: "10px 16px",
+                borderRadius: "20px",
+                border: `1px solid ${colors.gray200}`,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}>
+                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                  <div style={{ width: "3px", height: "12px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite" }} />
+                  <div style={{ width: "3px", height: "20px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite 0.1s" }} />
+                  <div style={{ width: "3px", height: "16px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite 0.2s" }} />
+                  <div style={{ width: "3px", height: "24px", background: colors.beninGreen, animation: "pulse 0.5s ease infinite 0.3s" }} />
+                </div>
+                <span style={{ fontSize: "12px", color: colors.gray500 }}>Lecture audio en cours...</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* INPUT */}
+        <div style={{
+          padding: "16px 20px",
+          borderTop: `1px solid ${colors.gray200}`,
+          background: colors.white,
+        }}>
+          {/* Image preview */}
+          {image && (
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "6px 12px 6px 8px",
+              background: colors.gray100,
+              borderRadius: "40px",
+              marginBottom: "12px",
+            }}>
+              <Image size={16} color={colors.gray500} />
+              <span style={{ fontSize: "12px", color: colors.gray600 }}>{image.name}</span>
+              <button
+                onClick={removeImage}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "2px",
+                  display: "flex",
+                }}
+              >
+                <X size={14} color={colors.gray400} />
+              </button>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "22px",
+                background: colors.gray100,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                border: `1px solid ${colors.gray200}`,
+                transition: "all 0.2s",
+              }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImage(e.target.files?.[0] || null)}
+                style={{ display: "none" }}
+              />
+              <Image size={18} color={colors.gray500} />
+            </label>
 
             <input
               value={input}
@@ -327,46 +504,108 @@ export default function ChatbotPage() {
               onKeyPress={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  handleSendMessage();
+                  sendMessage();
                 }
               }}
-              placeholder="Écrivez votre message..."
+              placeholder="Posez votre question..."
               style={{
                 flex: 1,
-                padding: "10px 14px",
-                border: "1px solid #d0d0d0",
-                borderRadius: "8px",
+                padding: "12px 16px",
+                borderRadius: "24px",
+                border: `1px solid ${colors.gray200}`,
                 fontSize: "14px",
+                outline: "none",
                 fontFamily: "inherit",
-                resize: "none",
-                maxHeight: "100px",
+                background: colors.gray50,
+                transition: "all 0.2s",
               }}
+              onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
+              onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
             />
 
+            {/* BOUTON VOCAL */}
+            {!recording ? (
+              <button
+                onClick={startRecording}
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "22px",
+                  background: colors.beninRed,
+                  color: colors.white,
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s",
+                }}
+              >
+                <Mic size={18} />
+              </button>
+            ) : (
+              <button
+                onClick={stopRecording}
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "22px",
+                  background: colors.beninYellow,
+                  color: colors.deepBlue,
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  animation: "pulseBg 1s infinite",
+                }}
+              >
+                <MicOff size={18} />
+              </button>
+            )}
+
             <button
-              onClick={handleSendMessage}
-              disabled={(!input.trim() && selectedImages.length === 0) || loading}
+              onClick={() => sendMessage()}
+              disabled={(!input && !image) || loading}
               style={{
-                padding: "10px 20px",
-                backgroundColor: (!input.trim() && selectedImages.length === 0) || loading ? "#ccc" : "#1d9e75",
-                color: "#fff",
+                width: "44px",
+                height: "44px",
+                borderRadius: "22px",
+                background: (!input && !image) || loading ? colors.gray300 : colors.beninGreen,
+                color: colors.white,
                 border: "none",
-                borderRadius: "8px",
-                cursor: (!input.trim() && selectedImages.length === 0) || loading ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                fontSize: "14px",
+                cursor: (!input && !image) || loading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s",
               }}
             >
-              Envoyer
+              {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={18} />}
             </button>
           </div>
+
+          <p style={{
+            fontSize: "10px",
+            color: colors.gray400,
+            margin: "10px 0 0 12px",
+          }}>
+            Envoyez un texte, une image ou un message vocal • Réponse audio automatique
+          </p>
         </div>
       </div>
 
       <style>{`
-        @keyframes blink {
-          0%, 60%, 100% { opacity: 0.5; }
-          30% { opacity: 1; }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 0.3; transform: scaleY(0.7); }
+          50% { opacity: 1; transform: scaleY(1); }
+        }
+        @keyframes pulseBg {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
       `}</style>
     </div>

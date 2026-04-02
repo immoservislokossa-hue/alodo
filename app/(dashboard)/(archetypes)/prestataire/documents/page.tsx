@@ -24,12 +24,14 @@ import {
 } from "lucide-react";
 
 // Dynamically import html2pdf only on client side
-let html2pdf: any = null;
 const loadHtml2pdf = async () => {
-  if (!html2pdf) {
-    html2pdf = (await import("html2pdf.js")).default;
+  try {
+    const module = await import("html2pdf.js");
+    return module.default || module;
+  } catch (error) {
+    console.error("Erreur lors du chargement de html2pdf:", error);
+    return null;
   }
-  return html2pdf;
 };
 
 const colors = {
@@ -549,6 +551,12 @@ export default function DocumentsPage() {
 
   const downloadPDF = async (html: string, filename: string) => {
     const html2pdfLib = await loadHtml2pdf();
+    
+    if (!html2pdfLib) {
+      alert("Impossible de charger la librairie PDF. Veuillez réessayer.");
+      return;
+    }
+    
     const element = document.createElement('div');
     element.innerHTML = html;
     element.style.position = 'absolute';
@@ -559,10 +567,10 @@ export default function DocumentsPage() {
     const opt = {
       margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg' as const, quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
+      jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
+    } as any;
     
     try {
       await html2pdfLib().set(opt).from(element).save();

@@ -861,14 +861,14 @@ export default function OnboardingPage() {
             <CheckCircle2 size={64} color={colors.beninGreen} style={{ marginBottom: 24 }} />
             <h2 style={{ fontSize: 28, marginBottom: 16, color: colors.ink }}>Ton profil est prêt !</h2>
             <div style={{ background: colors.gray100, borderRadius: 24, padding: 24, textAlign: "left", marginBottom: 32 }}>
-              <p><strong>📞 Téléphone:</strong> {form.phone}</p>
-              <p><strong>🎯 Profil:</strong> {form.type === "vendeur" ? "Vendeur" : "Prestataire"}</p>
-              <p><strong>⚙️ Activité:</strong> {form.archetype}</p>
-              <p><strong>🏢 Secteur:</strong> {SECTORS.find((s) => s.id === form.secteur)?.label}</p>
-              <p><strong>📌 Sous-secteur:</strong> {form.sousSecteur}</p>
-              <p><strong>📍 Localisation:</strong> {form.commune}</p>
-              <p><strong>🎯 Besoin:</strong> {FUNDING_NEEDS.find((n) => n.id === form.besoin)?.label}</p>
-              <p><strong>💰 Revenu:</strong> {REVENUE_OPTIONS.find((r) => r.value === form.revenu)?.label}</p>
+              <p><strong> Téléphone:</strong> {form.phone}</p>
+              <p><strong> Profil:</strong> {form.type === "vendeur" ? "Vendeur" : "Prestataire"}</p>
+              <p><strong> Activité:</strong> {form.archetype}</p>
+              <p><strong> Secteur:</strong> {SECTORS.find((s) => s.id === form.secteur)?.label}</p>
+              <p><strong> Sous-secteur:</strong> {form.sousSecteur}</p>
+              <p><strong> Localisation:</strong> {form.commune}</p>
+              <p><strong> Besoin:</strong> {FUNDING_NEEDS.find((n) => n.id === form.besoin)?.label}</p>
+              <p><strong> Revenu:</strong> {REVENUE_OPTIONS.find((r) => r.value === form.revenu)?.label}</p>
             </div>
             <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
               <button onClick={prevStep} style={{ background: colors.white, color: colors.deepBlue, border: `2px solid ${colors.deepBlue}`, borderRadius: 48, padding: "12px 28px", fontSize: 16, fontWeight: "bold", cursor: "pointer" }}>Retour</button>
