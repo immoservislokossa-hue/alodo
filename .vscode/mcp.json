@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"Developper": {
+			"url": "https://docs.moneroo.io/~gitbook/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}

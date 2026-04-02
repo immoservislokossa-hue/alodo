@@ -23,7 +23,8 @@ import {
   Mail,
   Shield,
   ChevronRight,
-  Building2
+  Building2,
+  LogOut
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -76,6 +77,18 @@ export default function ProfilPage() {
   const [role, setRole] = useState<UserRole>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await supabase.auth.signOut();
+      router.push("/");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error);
+      setLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -447,7 +460,7 @@ export default function ProfilPage() {
                 {getRoleLabel(role)}
               </p>
 
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
                 {role && (
                   <div
                     style={{
@@ -498,6 +511,40 @@ export default function ProfilPage() {
                     {profile.commune}
                   </div>
                 )}
+                <button
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "8px 16px",
+                    background: colors.beninRed,
+                    color: colors.white,
+                    border: "none",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: loggingOut ? "not-allowed" : "pointer",
+                    transition: "all 0.2s ease",
+                    opacity: loggingOut ? 0.6 : 1,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loggingOut) {
+                      (e.currentTarget as HTMLButtonElement).style.background = "#C80A23";
+                      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.05)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loggingOut) {
+                      (e.currentTarget as HTMLButtonElement).style.background = colors.beninRed;
+                      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+                    }
+                  }}
+                >
+                  <LogOut size={14} />
+                  {loggingOut ? "Déconnexion..." : "Se déconnecter"}
+                </button>
               </div>
             </div>
           </div>

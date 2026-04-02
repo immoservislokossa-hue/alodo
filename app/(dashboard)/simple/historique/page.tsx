@@ -228,6 +228,8 @@ export default function HistoriquePage() {
   }
 
   return (
+
+
     <div style={{ minHeight: "100vh", background: `linear-gradient(135deg, ${colors.grayBg} 0%, white 100%)` }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "48px 24px 24px 24px" }}>
         {/* Header */}
@@ -297,6 +299,8 @@ export default function HistoriquePage() {
             </div>
           </div>
         </div>
+
+        <div style={{ padding: "20px" }} />
 
         {/* Cartes Statistiques */}
         <div style={{

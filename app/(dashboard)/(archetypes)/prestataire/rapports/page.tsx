@@ -15,7 +15,9 @@ import {
   Calendar,
   CheckCircle,
   Clock,
-  XCircle
+  XCircle,
+  TrendingUp,
+  TrendingDown
 } from "lucide-react";
 
 const colors = {
@@ -79,19 +81,8 @@ type Transaction = {
   notes: any;
   date: string;
   created_at: string;
-  project: Project | null;
-};
-
-type Intervention = {
-  id: string;
-  title: string;
-  description: string | null;
-  scheduled_at: string;
-  status: "pending" | "done" | "cancelled";
-  location: string | null;
-  created_at: string;
-  project: Project | null;
-  client: Client | null;
+  project_id: string | null;
+  projects?: Project;
 };
 
 type Stats = {
@@ -104,8 +95,6 @@ type Stats = {
   completed_projects: number;
   draft_documents: number;
   sent_documents: number;
-  pending_interventions: number;
-  done_interventions: number;
 };
 
 export default function RapportsPage() {
@@ -115,7 +104,6 @@ export default function RapportsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [interventions, setInterventions] = useState<Intervention[]>([]);
   const [stats, setStats] = useState<Stats>({
     total_clients: 0,
     total_projects: 0,
@@ -126,12 +114,10 @@ export default function RapportsPage() {
     completed_projects: 0,
     draft_documents: 0,
     sent_documents: 0,
-    pending_interventions: 0,
-    done_interventions: 0,
   });
   
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"clients" | "projects" | "documents" | "transactions" | "interventions">("clients");
+  const [activeTab, setActiveTab] = useState<"clients" | "projects" | "documents" | "transactions">("clients");
 
   useEffect(() => {
     fetchAllData();
@@ -176,27 +162,15 @@ export default function RapportsPage() {
         .from("service_transactions")
         .select(`
           *,
-          project:projects(*)
+          projects(*)
         `)
         .eq("user_id", user.id)
         .order("date", { ascending: false });
-
-      // Récupérer les interventions avec projets et clients
-      const { data: interventionsData } = await supabase
-        .from("interventions")
-        .select(`
-          *,
-          project:projects(*),
-          client:clients(*)
-        `)
-        .eq("user_id", user.id)
-        .order("scheduled_at", { ascending: false });
 
       if (clientsData) setClients(clientsData);
       if (projectsData) setProjects(projectsData as Project[]);
       if (documentsData) setDocuments(documentsData as Document[]);
       if (transactionsData) setTransactions(transactionsData as Transaction[]);
-      if (interventionsData) setInterventions(interventionsData as Intervention[]);
 
       // Calculer les statistiques
       const total_income = (transactionsData || [])
@@ -212,9 +186,6 @@ export default function RapportsPage() {
       
       const draft_documents = (documentsData || []).filter((d: any) => d.status === "draft").length;
       const sent_documents = (documentsData || []).filter((d: any) => d.status === "sent" || d.status === "accepted").length;
-      
-      const pending_interventions = (interventionsData || []).filter((i: any) => i.status === "pending").length;
-      const done_interventions = (interventionsData || []).filter((i: any) => i.status === "done").length;
 
       setStats({
         total_clients: clientsData?.length || 0,
@@ -226,8 +197,6 @@ export default function RapportsPage() {
         completed_projects,
         draft_documents,
         sent_documents,
-        pending_interventions,
-        done_interventions,
       });
 
     } catch (error) {
@@ -264,6 +233,175 @@ export default function RapportsPage() {
       case "pending": return "En attente";
       case "done": return "Effectué";
       default: return status;
+    }
+  };
+
+  const getProjectStats = (projectId: string) => {
+    const projectTransactions = transactions.filter(t => t.project_id === projectId);
+    const income = projectTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+    const expense = projectTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+    return { income, expense, margin: income - expense };
+  };
+
+  const exportData = async (format: "pdf" | "csv") => {
+    if (format === "csv") {
+      const headers = ["Date", "Type", "Montant", "Catégorie", "Projet"];
+      const rows = transactions.map(t => [
+        new Date(t.date).toLocaleDateString("fr-FR"),
+        t.type === "income" ? "Revenu" : "Dépense",
+        t.amount,
+        t.category || "N/A",
+        t.projects?.title || "N/A",
+      ]);
+      const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rapports_prestataire_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      try {
+        const html2pdf = (await import("html2pdf.js")).default;
+        const getCurrentDate = () => {
+          const d = new Date();
+          return d.toLocaleDateString("fr-FR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+        };
+
+        const projectsWithStats = projects.map(p => ({
+          ...p,
+          stats: getProjectStats(p.id)
+        }));
+
+        const element = document.createElement("div");
+        element.innerHTML = `
+          <div style="font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.4; color: #000;">
+            <!-- En-tête -->
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px;">
+              <h1 style="margin: 0; font-size: 16px; font-weight: bold;">RAPPORT D'ACTIVITÉ PRESTATAIRE</h1>
+              <p style="margin: 5px 0; font-size: 10px;">Période d'activité - ${getCurrentDate()}</p>
+            </div>
+
+            <!-- Résumé global -->
+            <div style="margin-bottom: 20px; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 12px 0;">
+              <h2 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0;">BILAN FINANCIER GLOBAL</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <tr>
+                  <td style="padding: 5px 4px; width: 70%;">TOTAL REVENUS</td>
+                  <td style="padding: 5px 4px; text-align: right; border-right: 1px solid #000; font-weight: bold; width: 15%;">${stats.total_income.toLocaleString("fr-FR")}</td>
+                  <td style="padding: 5px 4px; width: 15%;"></td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 5px 4px;">TOTAL DÉPENSES</td>
+                  <td style="padding: 5px 4px; text-align: right; border-right: 1px solid #000;"></td>
+                  <td style="padding: 5px 4px; text-align: right; font-weight: bold;">${stats.total_expense.toLocaleString("fr-FR")}</td>
+                </tr>
+                <tr style="border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                  <td style="padding: 8px 4px; font-weight: bold;">MARGE GLOBALE</td>
+                  <td style="padding: 8px 4px; text-align: right; border-right: 1px solid #000; font-weight: bold;">${stats.balance >= 0 ? stats.balance.toLocaleString("fr-FR") : "-"}</td>
+                  <td style="padding: 8px 4px; text-align: right; font-weight: bold;">${stats.balance < 0 ? Math.abs(stats.balance).toLocaleString("fr-FR") : "-"}</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Détail par projet -->
+            <div style="margin-bottom: 20px;">
+              <h2 style="font-size: 12px; font-weight: bold; margin: 10px 0 8px 0; border-bottom: 1px solid #000; padding-bottom: 5px;">DÉTAIL PAR PROJET</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #000;">
+                    <th style="padding: 6px 4px; text-align: left; border-right: 1px solid #999;">PROJET</th>
+                    <th style="padding: 6px 4px; text-align: right; border-right: 1px solid #999;">REVENUS</th>
+                    <th style="padding: 6px 4px; text-align: right; border-right: 1px solid #999;">DÉPENSES</th>
+                    <th style="padding: 6px 4px; text-align: right; border-right: 1px solid #999;">MARGE</th>
+                    <th style="padding: 6px 4px; text-align: left;">STATUT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${projectsWithStats.map(p => `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                      <td style="padding: 4px 4px; border-right: 1px solid #ddd; font-weight: bold;">${p.title}</td>
+                      <td style="padding: 4px 4px; text-align: right; border-right: 1px solid #ddd; color: #008751; font-weight: bold;">+${p.stats.income.toLocaleString("fr-FR")}</td>
+                      <td style="padding: 4px 4px; text-align: right; border-right: 1px solid #ddd; color: #E8112D; font-weight: bold;">-${p.stats.expense.toLocaleString("fr-FR")}</td>
+                      <td style="padding: 4px 4px; text-align: right; border-right: 1px solid #ddd; font-weight: bold; color: ${p.stats.margin >= 0 ? '#008751' : '#E8112D'};">${p.stats.margin >= 0 ? '+' : ''}${p.stats.margin.toLocaleString("fr-FR")}</td>
+                      <td style="padding: 4px 4px; text-transform: capitalize;">${p.status}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Historique des transactions -->
+            <div style="margin-bottom: 20px;">
+              <h2 style="font-size: 12px; font-weight: bold; margin: 10px 0 8px 0; border-bottom: 1px solid #000; padding-bottom: 5px;">HISTORIQUE DES TRANSACTIONS</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                <thead>
+                  <tr style="border-bottom: 2px solid #000;">
+                    <th style="padding: 4px 3px; text-align: left; border-right: 1px solid #999;">DATE</th>
+                    <th style="padding: 4px 3px; text-align: left; border-right: 1px solid #999;">TYPE</th>
+                    <th style="padding: 4px 3px; text-align: left; border-right: 1px solid #999;">CATÉGORIE</th>
+                    <th style="padding: 4px 3px; text-align: left; border-right: 1px solid #999;">PROJET</th>
+                    <th style="padding: 4px 3px; text-align: right;">MONTANT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${transactions.map(t => `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                      <td style="padding: 3px 3px; border-right: 1px solid #ddd;">${new Date(t.date).toLocaleDateString("fr-FR")}</td>
+                      <td style="padding: 3px 3px; border-right: 1px solid #ddd; text-transform: uppercase; font-weight: ${t.type === "income" ? "bold" : "normal"}; color: ${t.type === "income" ? "#008751" : "#E8112D"};">${t.type === "income" ? "REVENU" : "DÉPENSE"}</td>
+                      <td style="padding: 3px 3px; border-right: 1px solid #ddd;">${t.category || "N/A"}</td>
+                      <td style="padding: 3px 3px; border-right: 1px solid #ddd;">${t.projects?.title || "N/A"}</td>
+                      <td style="padding: 3px 3px; text-align: right; font-weight: bold;">${t.amount.toLocaleString("fr-FR")}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Statistiques -->
+            <div style="margin-bottom: 15px;">
+              <h2 style="font-size: 12px; font-weight: bold; margin: 0 0 8px 0; border-bottom: 1px solid #000; padding-bottom: 5px;">STATISTIQUES GÉNÉRALES</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <tr>
+                  <td style="padding: 4px 4px; width: 50%;">Nombre de clients</td>
+                  <td style="padding: 4px 4px; text-align: right; font-weight: bold;">${stats.total_clients}</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 4px 4px;">Nombre de projets</td>
+                  <td style="padding: 4px 4px; text-align: right; font-weight: bold;">${stats.total_projects}</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 4px 4px;">Projets en cours</td>
+                  <td style="padding: 4px 4px; text-align: right; font-weight: bold;">${stats.ongoing_projects}</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 4px 4px;">Projets terminés</td>
+                  <td style="padding: 4px 4px; text-align: right; font-weight: bold;">${stats.completed_projects}</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 4px 4px;">Nombre de transactions</td>
+                  <td style="padding: 4px 4px; text-align: right; font-weight: bold;">${transactions.length}</td>
+                </tr>
+                <tr style="border-top: 1px solid #ddd;">
+                  <td style="padding: 4px 4px;">Taux de rentabilité</td>
+                  <td style="padding: 4px 4px; text-align: right; font-weight: bold;">${stats.total_income > 0 ? ((stats.balance / stats.total_income) * 100).toFixed(1) : "0"}%</td>
+                </tr>
+              </table>
+            </div>
+
+            <!-- Pied de page -->
+            <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #000; font-size: 9px; color: #666;">
+              <p style="margin: 3px 0;">Document généré automatiquement - ${getCurrentDate()}</p>
+              <p style="margin: 3px 0;">Confidentiel - Usage interne uniquement</p>
+            </div>
+          </div>
+        `;
+        await html2pdf().set({ margin: 5, filename: `rapport_prestataire_${new Date().toISOString().split("T")[0]}.pdf` }).from(element).save();
+      } catch (err) {
+        console.error("Erreur PDF:", err);
+        alert("Erreur lors de l'export PDF");
+      }
     }
   };
 
@@ -347,24 +485,6 @@ export default function RapportsPage() {
         border: `1px solid ${colors.gray200}`,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-          <Calendar size={18} color={colors.beninYellow} />
-          <span style={{ fontSize: "13px", color: colors.gray500 }}>Interventions</span>
-        </div>
-        <div style={{ fontSize: "28px", fontWeight: 600, color: colors.deepBlue }}>
-          {interventions.length}
-        </div>
-        <div style={{ fontSize: "12px", color: colors.gray400, marginTop: "4px" }}>
-          {stats.pending_interventions} en attente · {stats.done_interventions} effectuées
-        </div>
-      </div>
-
-      <div style={{
-        backgroundColor: colors.white,
-        padding: "20px",
-        borderRadius: "16px",
-        border: `1px solid ${colors.gray200}`,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
           <DollarSign size={18} color={colors.beninRed} />
           <span style={{ fontSize: "13px", color: colors.gray500 }}>Dépenses</span>
         </div>
@@ -387,8 +507,7 @@ export default function RapportsPage() {
         { id: "clients", label: "Clients", count: clients.length },
         { id: "projects", label: "Projets", count: projects.length },
         { id: "documents", label: "Documents", count: documents.length },
-        { id: "transactions", label: "Transactions", count: transactions.length },
-        { id: "interventions", label: "Interventions", count: interventions.length }
+        { id: "transactions", label: "Transactions", count: transactions.length }
       ].map((tab) => (
         <button
           key={tab.id}
@@ -609,8 +728,8 @@ export default function RapportsPage() {
                   <span style={{ fontSize: "12px", color: colors.gray500 }}>{transaction.category}</span>
                 )}
               </div>
-              {transaction.project && (
-                <div style={{ fontSize: "13px", color: colors.gray500 }}>Projet: {transaction.project.title}</div>
+              {transaction.projects && (
+                <div style={{ fontSize: "13px", color: colors.gray500 }}>Projet: {transaction.projects.title}</div>
               )}
               <div style={{ fontSize: "11px", color: colors.gray400 }}>
                 {new Date(transaction.date).toLocaleDateString()}
@@ -621,63 +740,6 @@ export default function RapportsPage() {
                 {typeof transaction.notes === 'object' ? JSON.stringify(transaction.notes).slice(0, 50) : transaction.notes}
               </div>
             )}
-          </div>
-        ))
-      )}
-    </div>
-  );
-
-  const renderInterventions = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {interventions.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px", color: colors.gray500 }}>
-          Aucune intervention
-        </div>
-      ) : (
-        interventions.map((intervention) => (
-          <div
-            key={intervention.id}
-            style={{
-              backgroundColor: colors.white,
-              padding: "16px 20px",
-              borderRadius: "12px",
-              border: `1px solid ${colors.gray200}`,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-              <div>
-                <div style={{ fontWeight: 600, color: colors.gray800 }}>{intervention.title}</div>
-                {intervention.client && (
-                  <div style={{ fontSize: "13px", color: colors.gray500 }}>Client: {intervention.client.name}</div>
-                )}
-                {intervention.project && (
-                  <div style={{ fontSize: "12px", color: colors.gray400 }}>Projet: {intervention.project.title}</div>
-                )}
-              </div>
-              <span style={{
-                padding: "4px 8px",
-                borderRadius: "20px",
-                fontSize: "11px",
-                backgroundColor: `${getStatusColor(intervention.status)}10`,
-                color: getStatusColor(intervention.status),
-              }}>
-                {getStatusText(intervention.status)}
-              </span>
-            </div>
-            {intervention.description && (
-              <div style={{ fontSize: "13px", color: colors.gray500, marginBottom: "8px" }}>
-                {intervention.description}
-              </div>
-            )}
-            <div style={{ display: "flex", gap: "16px", fontSize: "12px", color: colors.gray500 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                <Calendar size={12} />
-                {new Date(intervention.scheduled_at).toLocaleString()}
-              </div>
-              {intervention.location && (
-                <div>{intervention.location}</div>
-              )}
-            </div>
           </div>
         ))
       )}
@@ -731,14 +793,60 @@ export default function RapportsPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 style={{
-            fontSize: "28px",
-            fontWeight: 700,
-            fontFamily: "'Playfair Display', serif",
-            color: colors.deepBlue,
-          }}>
-            Rapports
-          </h1>
+          <div style={{ flex: 1 }}>
+            <h1 style={{
+              fontSize: "28px",
+              fontWeight: 700,
+              fontFamily: "'Playfair Display', serif",
+              color: colors.deepBlue,
+            }}>
+              Rapports
+            </h1>
+          </div>
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => exportData("csv")}
+              disabled={transactions.length === 0}
+              style={{
+                padding: "10px 16px",
+                background: colors.white,
+                border: `1px solid ${colors.gray200}`,
+                borderRadius: "12px",
+                color: colors.gray600,
+                cursor: transactions.length === 0 ? "not-allowed" : "pointer",
+                opacity: transactions.length === 0 ? 0.5 : 1,
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.2s",
+              }}
+            >
+              <Download size={16} />
+              CSV
+            </button>
+            <button
+              onClick={() => exportData("pdf")}
+              disabled={transactions.length === 0}
+              style={{
+                padding: "10px 16px",
+                background: colors.deepBlue,
+                border: "none",
+                borderRadius: "12px",
+                color: colors.white,
+                cursor: transactions.length === 0 ? "not-allowed" : "pointer",
+                opacity: transactions.length === 0 ? 0.5 : 1,
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                transition: "all 0.2s",
+              }}
+            >
+              <Download size={16} />
+              PDF
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -752,7 +860,6 @@ export default function RapportsPage() {
         {activeTab === "projects" && renderProjects()}
         {activeTab === "documents" && renderDocuments()}
         {activeTab === "transactions" && renderTransactions()}
-        {activeTab === "interventions" && renderInterventions()}
       </div>
     </div>
   );

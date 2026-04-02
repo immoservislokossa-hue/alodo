@@ -186,21 +186,24 @@ export default function FinanceDetailPage() {
                 color: colors.white,
                 border: "none",
                 borderRadius: 8,
-                padding: "12px 20px",
-                fontSize: 14,
-                fontWeight: 600,
+                padding: "14px 24px",
+                fontSize: 16,
+                fontWeight: 700,
                 cursor: "pointer",
-                transition: "background 0.2s",
+                transition: "all 0.2s",
+                boxShadow: "0 4px 12px rgba(0, 135, 81, 0.3)",
               }}
               onMouseOver={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = "#006941";
+                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
               }}
               onMouseOut={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = colors.beninGreen;
+                (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
               }}
             >
-              <Send size={18} />
-              Envoyer un crédit
+              <Send size={20} />
+              Accorder et envoyer
             </button>
           </div>
 
