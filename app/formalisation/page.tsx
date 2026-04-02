@@ -580,47 +580,6 @@ function ChatbotContent() {
               onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
             />
 
-            {!recording ? (
-              <button
-                onClick={startRecording}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "20px",
-                  background: colors.beninRed,
-                  color: colors.white,
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Mic size={16} />
-              </button>
-            ) : (
-              <button
-                onClick={stopRecording}
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "20px",
-                  background: colors.beninYellow,
-                  color: colors.deepBlue,
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  animation: "pulseBg 1s infinite",
-                }}
-              >
-                <MicOff size={16} />
-              </button>
-            )}
-
             <button
               onClick={() => sendMessage()}
               disabled={(!input && !image) || loading}
@@ -647,7 +606,7 @@ function ChatbotContent() {
             color: colors.gray400,
             margin: "8px 0 0 12px",
           }}>
-            Envoyez un texte, une image ou un message vocal
+            Envoyez un texte ou une image • Réponse rapide
           </p>
         </div>
       </div>
@@ -655,10 +614,6 @@ function ChatbotContent() {
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
-        }
-        @keyframes pulseBg {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
         }
       `}</style>
     </div>
