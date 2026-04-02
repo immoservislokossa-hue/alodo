@@ -12,8 +12,6 @@ import {
   ChevronRight,
   ExternalLink,
   FileText,
-  Headphones,
-  Sparkles,
   Paperclip,
   Trash2
 } from "lucide-react";
@@ -202,7 +200,7 @@ function ChatbotContent() {
       const userMessage: Message = {
         id: Date.now().toString(),
         type: "user",
-        text: messageText || (audioBase64 ? "🎤 Message vocal" : ""),
+        text: messageText || (audioBase64 ? "Message vocal" : ""),
         image: image ? URL.createObjectURL(image) : null,
         timestamp: new Date(),
       };
@@ -212,7 +210,7 @@ function ChatbotContent() {
     const waitingMessage: Message = {
       id: (Date.now() + 1).toString(),
       type: "bot",
-      text: "🔍 Recherche en cours...",
+      text: "Recherche en cours...",
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, waitingMessage]);
@@ -256,7 +254,7 @@ function ChatbotContent() {
           {
             id: (Date.now() + 2).toString(),
             type: "bot",
-            text: "❌ Désolé, une erreur est survenue. Veuillez réessayer dans quelques instants.",
+            text: "Désolé, une erreur est survenue. Veuillez réessayer dans quelques instants.",
             timestamp: new Date(),
           },
         ];
@@ -280,7 +278,7 @@ function ChatbotContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+      background: colors.white,
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
@@ -312,7 +310,8 @@ function ChatbotContent() {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+        border: `1px solid ${colors.gray200}`,
       }}>
         
         {/* HEADER */}
@@ -336,7 +335,7 @@ function ChatbotContent() {
                 justifyContent: "center",
                 backdropFilter: "blur(10px)",
               }}>
-                <Sparkles size={28} color={colors.beninYellow} />
+                <FileText size={28} color={colors.beninYellow} />
               </div>
               <div>
                 <h1 style={{ 
@@ -397,14 +396,14 @@ function ChatbotContent() {
                 justifyContent: "center",
                 margin: "0 auto 24px",
               }}>
-                <Headphones size={40} color={colors.deepBlue} />
+                <FileText size={40} color={colors.deepBlue} />
               </div>
               <h3 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 12px", color: colors.gray800 }}>
                 Comment puis-je vous aider ?
               </h3>
               <p style={{ fontSize: "15px", margin: 0, color: colors.gray500, lineHeight: 1.6 }}>
                 Posez votre question sur les démarches administratives au Bénin.<br />
-                Je peux lire des images et écouter vos messages vocaux.
+                Texte • Image • Voix
               </p>
               <div style={{
                 display: "flex",
@@ -472,6 +471,7 @@ function ChatbotContent() {
                   }}
                 >
                   {msg.image && (
+
                     <div style={{ marginBottom: "12px" }}>
                       <img
                         src={msg.image}
@@ -506,7 +506,6 @@ function ChatbotContent() {
                       borderLeft: `3px solid ${colors.beninYellow}`,
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <FileText size={14} color={msg.type === "user" ? colors.white : colors.beninYellow} />
                         <span style={{ fontSize: "12px", fontWeight: 600, color: msg.type === "user" ? colors.white : colors.gray600 }}>
                           Démarches à suivre
                         </span>
@@ -569,7 +568,7 @@ function ChatbotContent() {
             ))
           )}
 
-          {loading && (
+            {loading && (
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
               <div style={{
                 background: colors.white,
@@ -581,7 +580,7 @@ function ChatbotContent() {
                 gap: "12px",
               }}>
                 <Loader2 size={20} color={colors.beninGreen} style={{ animation: "spin 1s linear infinite" }} />
-                <span style={{ fontSize: "14px", color: colors.gray600 }}>L'assistant réfléchit...</span>
+                <span style={{ fontSize: "14px", color: colors.gray600 }}>Chargement...</span>
               </div>
             </div>
           )}
@@ -700,7 +699,7 @@ function ChatbotContent() {
               </button>
             </div>
 
-            <div style={{ flex: 1, position: "relative" }}>
+            <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
               <input
                 ref={inputRef}
                 value={input}
@@ -750,6 +749,7 @@ function ChatbotContent() {
                 justifyContent: "center",
                 transition: "all 0.2s",
                 flexShrink: 0,
+                minWidth: "44px",
               }}
               onMouseEnter={(e) => {
                 if ((input || image) && !loading) {
@@ -771,7 +771,7 @@ function ChatbotContent() {
             color: colors.gray400,
             margin: "12px 0 0 12px",
           }}>
-            ✨ Assistant intelligent • Réponses basées sur les informations officielles
+            Assistant intelligent • Réponses basées sur les informations officielles
           </p>
         </div>
       </div>
