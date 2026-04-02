@@ -12,7 +12,10 @@ import {
   ChevronRight,
   ExternalLink,
   FileText,
-  Headphones
+  Headphones,
+  Sparkles,
+  Paperclip,
+  Trash2
 } from "lucide-react";
 
 // Couleurs du branding Alɔdó
@@ -23,15 +26,17 @@ const colors = {
   beninGreen: "#008751",
   beninYellow: "#FCD116",
   beninRed: "#E8112D",
-  gray50: "#F9FAFB",
-  gray100: "#F3F4F6",
-  gray200: "#E5E7EB",
-  gray300: "#D1D5DB",
-  gray400: "#9CA3AF",
-  gray500: "#6B7280",
-  gray600: "#4B5563",
-  gray700: "#374151",
-  gray800: "#1F2937",
+  gray50: "#FAFAFA",
+  gray100: "#F5F5F5",
+  gray200: "#E5E5E5",
+  gray300: "#D4D4D4",
+  gray400: "#A3A3A3",
+  gray500: "#737373",
+  gray600: "#525252",
+  gray700: "#404040",
+  gray800: "#262626",
+  gradientStart: "#667eea",
+  gradientEnd: "#764ba2",
 };
 
 type Message = {
@@ -102,8 +107,9 @@ function ChatbotContent() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // ✅ Récupérer la query param ?q=... et envoyer automatiquement
+  // Récupérer la query param ?q=... et envoyer automatiquement
   useEffect(() => {
     const query = searchParams.get("q");
     if (query && query.trim() && !hasSentQuery) {
@@ -206,7 +212,7 @@ function ChatbotContent() {
     const waitingMessage: Message = {
       id: (Date.now() + 1).toString(),
       type: "bot",
-      text: "Un instant, je vérifie les informations...",
+      text: "🔍 Recherche en cours...",
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, waitingMessage]);
@@ -250,7 +256,7 @@ function ChatbotContent() {
           {
             id: (Date.now() + 2).toString(),
             type: "bot",
-            text: "Oups, je consulte encore les informations officielles pour mieux te répondre.",
+            text: "❌ Désolé, une erreur est survenue. Veuillez réessayer dans quelques instants.",
             timestamp: new Date(),
           },
         ];
@@ -259,6 +265,7 @@ function ChatbotContent() {
       setLoading(false);
       setInput("");
       setImage(null);
+      inputRef.current?.focus();
     }
   };
 
@@ -273,20 +280,20 @@ function ChatbotContent() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: colors.white,
+      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      padding: "12px",
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      padding: "24px",
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     }}>
-      {/* Barre tricolore */}
+      {/* Barre tricolore Bénin */}
       <div style={{
         position: "fixed",
         top: 0,
         left: 0,
         right: 0,
-        height: "4px",
+        height: "6px",
         display: "flex",
         zIndex: 50,
       }}>
@@ -295,78 +302,147 @@ function ChatbotContent() {
         <div style={{ flex: 1, background: colors.beninRed }} />
       </div>
 
+      {/* Container principal */}
       <div style={{
-        width: "100%",
-        maxWidth: "100%",
-        height: "calc(100vh - 24px)",
+        width: "1200px",
+        height: "85vh",
+        maxHeight: "800px",
         background: colors.white,
-        borderRadius: "24px",
+        borderRadius: "32px",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-        border: `1px solid ${colors.gray200}`,
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
       }}>
+        
         {/* HEADER */}
         <div style={{
-          padding: "16px 20px",
+          padding: "28px 32px",
           background: `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`,
           color: colors.white,
           flexShrink: 0,
+          position: "relative",
+          overflow: "hidden",
         }}>
-          <div>
-            <h2 style={{ 
-              margin: 0, 
-              fontSize: "18px", 
-              fontWeight: 700,
-              fontFamily: "'Playfair Display', serif"
-            }}>
-              Assistant Admin Bénin
-            </h2>
-            <p style={{ 
-              margin: "4px 0 0", 
-              fontSize: "11px", 
-              opacity: 0.8 
-            }}>
-              Texte, image ou vocal
-            </p>
+          <div style={{ position: "relative", zIndex: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                background: "rgba(255,255,255,0.1)",
+                borderRadius: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backdropFilter: "blur(10px)",
+              }}>
+                <Sparkles size={28} color={colors.beninYellow} />
+              </div>
+              <div>
+                <h1 style={{ 
+                  margin: 0, 
+                  fontSize: "28px", 
+                  fontWeight: 700,
+                  letterSpacing: "-0.5px",
+                }}>
+                  Assistant Admin Bénin
+                </h1>
+                <p style={{ 
+                  margin: "4px 0 0", 
+                  fontSize: "14px", 
+                  opacity: 0.9 
+                }}>
+                  Votre guide administratif intelligent
+                </p>
+              </div>
+            </div>
           </div>
+          {/* Décoration de fond */}
+          <div style={{
+            position: "absolute",
+            top: "-50%",
+            right: "-10%",
+            width: "300px",
+            height: "300px",
+            background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }} />
         </div>
 
         {/* MESSAGES */}
         <div style={{
           flex: 1,
           overflowY: "auto",
-          padding: "16px",
+          padding: "24px 32px",
           display: "flex",
           flexDirection: "column",
-          gap: "12px",
+          gap: "20px",
           background: colors.gray50,
         }}>
           {messages.length === 0 ? (
             <div style={{
               textAlign: "center",
-              padding: "40px 20px",
-              color: colors.gray400,
+              padding: "60px 40px",
+              maxWidth: "500px",
+              margin: "0 auto",
             }}>
               <div style={{
-                width: "56px",
-                height: "56px",
-                background: `${colors.deepBlue}10`,
-                borderRadius: "28px",
+                width: "80px",
+                height: "80px",
+                background: `linear-gradient(135deg, ${colors.deepBlue}15, ${colors.deepBlue}08)`,
+                borderRadius: "40px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                margin: "0 auto 16px",
+                margin: "0 auto 24px",
               }}>
-                <Headphones size= {28} color={colors.deepBlue} />
+                <Headphones size={40} color={colors.deepBlue} />
               </div>
-              <p style={{ fontSize: "14px", margin: 0 }}>
-                Posez votre question par texte, image ou vocal
+              <h3 style={{ fontSize: "20px", fontWeight: 600, margin: "0 0 12px", color: colors.gray800 }}>
+                Comment puis-je vous aider ?
+              </h3>
+              <p style={{ fontSize: "15px", margin: 0, color: colors.gray500, lineHeight: 1.6 }}>
+                Posez votre question sur les démarches administratives au Bénin.<br />
+                Je peux lire des images et écouter vos messages vocaux.
               </p>
-              <p style={{ fontSize: "12px", marginTop: "8px", color: colors.gray500 }}>
-                Je vous répondrai avec des informations précises
-              </p>
+              <div style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "center",
+                marginTop: "32px",
+                flexWrap: "wrap",
+              }}>
+                {["Carte d'identité", "Passeport", "Acte de naissance", "CNSS"].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => {
+                      setInput(suggestion);
+                      setTimeout(() => sendMessage(), 100);
+                    }}
+                    style={{
+                      padding: "8px 16px",
+                      background: colors.white,
+                      border: `1px solid ${colors.gray200}`,
+                      borderRadius: "20px",
+                      fontSize: "13px",
+                      color: colors.gray700,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = colors.deepBlue;
+                      e.currentTarget.style.color = colors.deepBlue;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = colors.gray200;
+                      e.currentTarget.style.color = colors.gray700;
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
             </div>
           ) : (
             messages.map((msg) => (
@@ -375,38 +451,44 @@ function ChatbotContent() {
                 style={{
                   display: "flex",
                   justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
+                  animation: "slideIn 0.3s ease-out",
                 }}
               >
                 <div
                   style={{
-                    maxWidth: "85%",
-                    background: msg.type === "user" ? colors.deepBlue : colors.white,
+                    maxWidth: "70%",
+                    background: msg.type === "user" 
+                      ? `linear-gradient(135deg, ${colors.deepBlue} 0%, ${colors.deepBlueDark} 100%)`
+                      : colors.white,
                     color: msg.type === "user" ? colors.white : colors.gray800,
-                    padding: "12px 16px",
-                    borderRadius: "18px",
-                    borderBottomRightRadius: msg.type === "user" ? "4px" : "18px",
-                    borderBottomLeftRadius: msg.type === "user" ? "18px" : "4px",
-                    boxShadow: msg.type === "bot" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-                    border: msg.type === "bot" ? `1px solid ${colors.gray200}` : "none",
+                    padding: "16px 20px",
+                    borderRadius: msg.type === "user" 
+                      ? "20px 20px 4px 20px"
+                      : "20px 20px 20px 4px",
+                    boxShadow: msg.type === "bot" 
+                      ? "0 2px 8px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)"
+                      : "0 4px 12px rgba(0,0,0,0.15)",
+                    transition: "transform 0.2s",
                   }}
                 >
                   {msg.image && (
-                    <div style={{ marginBottom: "8px" }}>
+                    <div style={{ marginBottom: "12px" }}>
                       <img
                         src={msg.image}
                         alt="Uploaded"
                         style={{
                           maxWidth: "100%",
-                          maxHeight: "150px",
+                          maxHeight: "200px",
                           borderRadius: "12px",
+                          objectFit: "cover",
                         }}
                       />
                     </div>
                   )}
 
                   <div style={{
-                    fontSize: "14px",
-                    lineHeight: 1.5,
+                    fontSize: "15px",
+                    lineHeight: 1.6,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                   }}>
@@ -415,23 +497,25 @@ function ChatbotContent() {
 
                   {msg.steps && (
                     <div style={{
-                      marginTop: "10px",
-                      padding: "10px",
-                      background: `${colors.beninYellow}15`,
-                      borderRadius: "10px",
+                      marginTop: "14px",
+                      padding: "14px",
+                      background: msg.type === "user" 
+                        ? "rgba(255,255,255,0.1)"
+                        : `${colors.beninYellow}10`,
+                      borderRadius: "12px",
                       borderLeft: `3px solid ${colors.beninYellow}`,
                     }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                        <FileText size={12} color={colors.beninYellow} />
-                        <span style={{ fontSize: "11px", fontWeight: 600, color: colors.gray600 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <FileText size={14} color={msg.type === "user" ? colors.white : colors.beninYellow} />
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: msg.type === "user" ? colors.white : colors.gray600 }}>
                           Démarches à suivre
                         </span>
                       </div>
                       <p style={{
                         fontSize: "13px",
                         margin: 0,
-                        lineHeight: 1.5,
-                        color: colors.gray700,
+                        lineHeight: 1.6,
+                        color: msg.type === "user" ? colors.white : colors.gray700,
                       }}>
                         {msg.steps}
                       </p>
@@ -446,29 +530,37 @@ function ChatbotContent() {
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "6px",
-                        marginTop: "10px",
-                        color: colors.beninGreen,
+                        gap: "8px",
+                        marginTop: "12px",
+                        color: msg.type === "user" ? colors.beninYellow : colors.beninGreen,
                         textDecoration: "none",
-                        fontSize: "12px",
+                        fontSize: "13px",
                         fontWeight: 500,
-                        padding: "5px 10px",
-                        background: `${colors.beninGreen}10`,
-                        borderRadius: "16px",
+                        padding: "6px 12px",
+                        background: msg.type === "user" 
+                          ? "rgba(255,255,255,0.1)"
+                          : `${colors.beninGreen}10`,
+                        borderRadius: "20px",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateX(4px)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateX(0)";
                       }}
                     >
-                      <ExternalLink size={12} />
+                      <ExternalLink size={14} />
                       Voir le lien officiel
-                      <ChevronRight size={12} />
+                      <ChevronRight size={14} />
                     </a>
                   )}
 
                   <div style={{
                     fontSize: "10px",
-                    opacity: 0.5,
-                    marginTop: "8px",
+                    opacity: 0.6,
+                    marginTop: "10px",
                     textAlign: msg.type === "user" ? "right" : "left",
-                    color: colors.gray500,
                   }}>
                     {formatTime(msg.timestamp)}
                   </div>
@@ -481,15 +573,15 @@ function ChatbotContent() {
             <div style={{ display: "flex", justifyContent: "flex-start" }}>
               <div style={{
                 background: colors.white,
-                padding: "12px 16px",
-                borderRadius: "18px",
-                border: `1px solid ${colors.gray200}`,
+                padding: "16px 20px",
+                borderRadius: "20px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "12px",
               }}>
-                <Loader2 size={18} color={colors.beninGreen} style={{ animation: "spin 1s linear infinite" }} />
-                <span style={{ fontSize: "13px", color: colors.gray500 }}>L'assistant réfléchit...</span>
+                <Loader2 size={20} color={colors.beninGreen} style={{ animation: "spin 1s linear infinite" }} />
+                <span style={{ fontSize: "14px", color: colors.gray600 }}>L'assistant réfléchit...</span>
               </div>
             </div>
           )}
@@ -497,9 +589,9 @@ function ChatbotContent() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* INPUT */}
+        {/* INPUT AREA */}
         <div style={{
-          padding: "12px 16px",
+          padding: "20px 32px",
           borderTop: `1px solid ${colors.gray200}`,
           background: colors.white,
           flexShrink: 0,
@@ -508,105 +600,178 @@ function ChatbotContent() {
             <div style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "8px",
-              padding: "4px 10px 4px 8px",
+              gap: "10px",
+              padding: "6px 12px 6px 8px",
               background: colors.gray100,
-              borderRadius: "32px",
-              marginBottom: "10px",
+              borderRadius: "40px",
+              marginBottom: "16px",
+              animation: "fadeIn 0.2s ease-out",
             }}>
-              <ImageIcon size={14} color={colors.gray500} />
-              <span style={{ fontSize: "11px", color: colors.gray600 }}>{image.name}</span>
+              <img 
+                src={URL.createObjectURL(image)} 
+                alt="preview" 
+                style={{ width: "32px", height: "32px", borderRadius: "8px", objectFit: "cover" }}
+              />
+              <span style={{ fontSize: "13px", color: colors.gray600 }}>{image.name.length > 30 ? image.name.substring(0, 30) + "..." : image.name}</span>
               <button
                 onClick={removeImage}
                 style={{
-                  background: "none",
+                  background: colors.gray200,
                   border: "none",
                   cursor: "pointer",
-                  padding: "2px",
+                  padding: "4px",
+                  borderRadius: "12px",
                   display: "flex",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = colors.gray300;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = colors.gray200;
                 }}
               >
-                <X size={12} color={colors.gray400} />
+                <Trash2 size={12} color={colors.gray600} />
               </button>
             </div>
           )}
 
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <label
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "20px",
-                background: colors.gray100,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                border: `1px solid ${colors.gray200}`,
-                flexShrink: 0,
-              }}
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImage(e.target.files?.[0] || null)}
-                style={{ display: "none" }}
-              />
-              <ImageIcon size={16} color={colors.gray500} />
-            </label>
+          <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+              <label
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "22px",
+                  background: colors.gray100,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  border: `1px solid ${colors.gray200}`,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = colors.gray200;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = colors.gray100;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setImage(e.target.files?.[0] || null)}
+                  style={{ display: "none" }}
+                />
+                <Paperclip size={18} color={colors.gray600} />
+              </label>
 
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Posez votre question..."
-              style={{
-                flex: 1,
-                padding: "10px 14px",
-                borderRadius: "20px",
-                border: `1px solid ${colors.gray200}`,
-                fontSize: "14px",
-                outline: "none",
-                fontFamily: "inherit",
-                background: colors.gray50,
-                minWidth: 0,
-              }}
-              onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
-              onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
-            />
+              <button
+                onClick={recording ? stopRecording : startRecording}
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "22px",
+                  background: recording ? colors.beninRed : colors.gray100,
+                  border: `1px solid ${recording ? colors.beninRed : colors.gray200}`,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!recording) {
+                    e.currentTarget.style.background = colors.gray200;
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!recording) {
+                    e.currentTarget.style.background = colors.gray100;
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }
+                }}
+              >
+                {recording ? <MicOff size={18} color={colors.white} /> : <Mic size={18} color={colors.gray600} />}
+              </button>
+            </div>
+
+            <div style={{ flex: 1, position: "relative" }}>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder="Posez votre question sur les démarches administratives..."
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: "24px",
+                  border: `1.5px solid ${colors.gray200}`,
+                  fontSize: "14px",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  background: colors.gray50,
+                  transition: "all 0.2s",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = colors.deepBlue;
+                  e.currentTarget.style.background = colors.white;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = colors.gray200;
+                  e.currentTarget.style.background = colors.gray50;
+                }}
+              />
+            </div>
 
             <button
               onClick={() => sendMessage()}
               disabled={(!input && !image) || loading}
               style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "20px",
-                background: (!input && !image) || loading ? colors.gray300 : colors.beninGreen,
+                width: "44px",
+                height: "44px",
+                borderRadius: "22px",
+                background: (!input && !image) || loading ? colors.gray300 : `linear-gradient(135deg, ${colors.beninGreen} 0%, ${colors.beninGreen}CC 100%)`,
                 color: colors.white,
                 border: "none",
                 cursor: (!input && !image) || loading ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                transition: "all 0.2s",
                 flexShrink: 0,
               }}
+              onMouseEnter={(e) => {
+                if ((input || image) && !loading) {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,135,81,0.3)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
-              {loading ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={16} />}
+              {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={18} />}
             </button>
           </div>
 
           <p style={{
-            fontSize: "9px",
+            fontSize: "11px",
             color: colors.gray400,
-            margin: "8px 0 0 12px",
+            margin: "12px 0 0 12px",
           }}>
-            Envoyez un texte ou une image • Réponse rapide
+            ✨ Assistant intelligent • Réponses basées sur les informations officielles
           </p>
         </div>
       </div>
@@ -615,6 +780,51 @@ function ChatbotContent() {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: ${colors.gray300} ${colors.gray100};
+        }
+        
+        *::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        *::-webkit-scrollbar-track {
+          background: ${colors.gray100};
+          border-radius: 3px;
+        }
+        
+        *::-webkit-scrollbar-thumb {
+          background: ${colors.gray300};
+          border-radius: 3px;
+        }
+        
+        *::-webkit-scrollbar-thumb:hover {
+          background: ${colors.gray400};
+        }
       `}</style>
     </div>
   );
@@ -622,35 +832,18 @@ function ChatbotContent() {
 
 export default function ChatbotPage() {
   return (
-    <div style={{
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      minHeight: "100vh",
-      background: colors.white,
-      padding: "0",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
-    }}>
-      <Suspense fallback={
-        <div style={{
-          width: "100%",
-          maxWidth: "100%",
-          height: "100vh",
-          background: colors.white,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <Loader2 size={32} style={{ animation: "spin 1s linear infinite" }} color="#008751" />
-        </div>
-      }>
-        <ChatbotContent />
-      </Suspense>
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-    </div>
+    <Suspense fallback={
+      <div style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <Loader2 size={48} style={{ animation: "spin 1s linear infinite" }} color="#FFFFFF" />
+      </div>
+    }>
+      <ChatbotContent />
+    </Suspense>
   );
 }

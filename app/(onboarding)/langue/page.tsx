@@ -167,13 +167,52 @@ export default function OnboardingPage() {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+      // Nettoyer les events pour éviter que l'ancienne séquence continue
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
     }
-    const newAudio = new Audio(`/audio/${form.langue}/${stepName}.mp3`);
-    newAudio.onplay = () => setAudioPlaying(true);
-    newAudio.onended = () => setAudioPlaying(false);
-    newAudio.onerror = () => setAudioPlaying(false);
-    newAudio.play().catch(() => {});
-    audioRef.current = newAudio;
+    
+    let sources: string[] = [];
+
+    if (stepName === "langue") {
+      sources = [
+        "/audio/fr/fr.ogg",
+        "/audio/fon/fon.ogg",
+        "/audio/yor/yor.ogg"
+      ];
+    } else {
+      let audioFileName = `${stepName}.ogg`;
+      if (stepName === "connexion") audioFileName = `connection.ogg`;
+      else if (stepName === "telephone") audioFileName = `numero.ogg`;
+      sources = [`/audio/${form.langue}/${audioFileName}`];
+    }
+
+    const playSequence = (index: number) => {
+      if (index >= sources.length) {
+        setAudioPlaying(false);
+        return;
+      }
+      
+      const newAudio = new Audio(sources[index]);
+      newAudio.onplay = () => setAudioPlaying(true);
+      newAudio.onended = () => playSequence(index + 1);
+      newAudio.onerror = () => {
+        console.warn(`Audio non trouvé: ${sources[index]}`);
+        playSequence(index + 1); // Passe au suivant si erreur
+      };
+      
+      newAudio.play().catch((e) => {
+        console.error("Erreur de lecture audio:", e);
+        // Ne déclenche pas la suite si annulé par l'utilisateur (ex: navigation rapide)
+        if (e.name !== 'AbortError') {
+          playSequence(index + 1);
+        }
+      });
+      
+      audioRef.current = newAudio;
+    };
+
+    playSequence(0);
   }, [muted, form.langue]);
 
   useEffect(() => {
