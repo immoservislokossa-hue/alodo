@@ -5,13 +5,16 @@ const ai = new GoogleGenAI({
 });
 
 // =========================
-// RETRY UTILITY
+// RETRY
 // =========================
 async function generateWithRetry(config: any, retries = 2) {
   try {
     return await ai.models.generateContent(config);
   } catch (error: any) {
+    console.error("Erreur generateContent:", error?.status);
+
     if (retries > 0 && error?.status === 503) {
+      console.log("Retry...");
       await new Promise((r) => setTimeout(r, 1000));
       return generateWithRetry(config, retries - 1);
     }
@@ -19,7 +22,59 @@ async function generateWithRetry(config: any, retries = 2) {
   }
 }
 
+// =========================
+// CLEAN JSON
+// =========================
+function safeParse(raw: string) {
+  try {
+    const clean = raw
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    return JSON.parse(clean);
+  } catch {
+    console.log("⚠️ JSON parsing fallback");
+    return {
+      text: raw,
+      steps: "",
+      link: null,
+    };
+  }
+}
+
+// =========================
+// NORMALIZE STEPS
+// =========================
+function normalizeSteps(steps: any): string {
+  if (!steps) return "";
+
+  if (typeof steps === "string") return steps;
+
+  if (Array.isArray(steps)) {
+    return steps
+      .map((step, index) => {
+        if (typeof step === "string") return `${index + 1}. ${step}`;
+
+        let text = `${step.step_number || index + 1}. ${step.description || ""}`;
+
+        if (step.details && Array.isArray(step.details)) {
+          text +=
+            "\n" +
+            step.details.map((d: string) => `- ${d}`).join("\n");
+        }
+
+        return text;
+      })
+      .join("\n");
+  }
+
+  return "";
+}
+
 export async function POST(req: Request) {
+  console.log("===== NEW REQUEST =====");
+
   try {
     const {
       message,
@@ -29,12 +84,20 @@ export async function POST(req: Request) {
       audioMimeType,
     } = await req.json();
 
+    console.log("Inputs:", {
+      text: !!message,
+      image: !!imageBase64,
+      audio: !!audioBase64,
+    });
+
     let finalUserText = message || "";
 
     // =========================
     // 1. AUDIO → TEXTE
     // =========================
     if (audioBase64 && audioMimeType) {
+      console.log("🎤 Transcribing audio...");
+
       try {
         const audioRes = await generateWithRetry({
           model: "gemini-2.5-flash",
@@ -58,8 +121,10 @@ export async function POST(req: Request) {
         finalUserText =
           audioRes.candidates?.[0]?.content?.parts?.[0]?.text ||
           finalUserText;
+
+        console.log("✅ Transcript:", finalUserText);
       } catch {
-        // fallback silencieux → on continue sans crash
+        console.log("❌ Audio transcription failed");
       }
     }
 
@@ -68,11 +133,10 @@ export async function POST(req: Request) {
     // =========================
     const parts: any[] = [];
 
-    if (finalUserText) {
-      parts.push({ text: finalUserText });
-    }
+    if (finalUserText) parts.push({ text: finalUserText });
 
     if (imageBase64 && imageMimeType) {
+      console.log("🖼️ Image detected");
       parts.push({
         inlineData: {
           data: imageBase64,
@@ -84,6 +148,8 @@ export async function POST(req: Request) {
     // =========================
     // 3. IA PRINCIPALE
     // =========================
+    console.log("🧠 Generating response...");
+
     let parsed = {
       text: "",
       steps: "",
@@ -92,7 +158,7 @@ export async function POST(req: Request) {
 
     try {
       const response = await generateWithRetry({
-        model: "gemini-2.5-flash", // stable pour hackathon
+        model: "gemini-2.5-flash",
         contents: [{ parts }],
         config: {
           systemInstruction: `
@@ -103,9 +169,8 @@ Règles:
 - réponse courte
 - pas de **
 - utile et direct
-- si image: explique
 
-Retour JSON:
+Réponds UNIQUEMENT en JSON valide sans markdown:
 {
 "text": "",
 "steps": "",
@@ -118,15 +183,21 @@ Retour JSON:
       const raw =
         response.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
 
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        parsed.text = raw;
-      }
+      console.log("📦 RAW:", raw);
+
+      parsed = safeParse(raw);
+
+      // 🔥 NORMALISATION
+      parsed.steps = normalizeSteps(parsed.steps);
+
+      console.log("✅ Parsed text:", parsed.text);
+      console.log("📋 Steps:", parsed.steps);
     } catch {
+      console.log("❌ AI generation failed");
+
       return Response.json({
         text:
-          "Oups, je réfléchis encore pour te donner une réponse fiable. Réessaie dans quelques secondes.",
+          "Oups, je réfléchis encore pour te donner une réponse fiable.",
         steps: "",
         link: null,
         audio: null,
@@ -134,14 +205,18 @@ Retour JSON:
     }
 
     // =========================
-    // 4. AUDIO (OPTIONNEL)
+    // 4. AUDIO
     // =========================
     let audio = null;
 
     try {
       const finalText = `${parsed.text} ${parsed.steps}`.trim();
 
-      if (finalText.length > 0) {
+      console.log("🔊 Text for audio:", finalText);
+
+      if (finalText) {
+        console.log("🎧 Generating audio...");
+
         const ttsRes = await generateWithRetry({
           model: "gemini-2.5-flash-preview-tts",
           contents: `Explique clairement en moins de 40 secondes: ${finalText}`,
@@ -159,29 +234,31 @@ Retour JSON:
 
         audio =
           ttsRes.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
+
+        console.log(audio ? "✅ Audio OK" : "⚠️ Audio vide");
       }
-    } catch {
-      // audio échoue → on ignore, pas de crash
+    } catch (err) {
+      console.log("❌ Audio failed", err);
       audio = null;
     }
 
     // =========================
-    // 5. RESPONSE SAFE
+    // 5. RESPONSE
     // =========================
     return Response.json({
       text:
         parsed.text ||
-        "Je cherche encore une réponse fiable. Réessaie dans quelques secondes.",
+        "Je cherche encore une réponse fiable. Réessaie.",
       steps: parsed.steps || "",
       link: parsed.link || null,
-      audio, // peut être null → frontend gère
+      audio,
     });
   } catch (error) {
-    console.error("Erreur backend:", error);
+    console.error("💥 Backend error:", error);
 
     return Response.json({
       text:
-        "Oups, je consulte encore les informations officielles pour mieux te répondre.",
+        "Oups, je consulte encore les informations officielles.",
       steps: "",
       link: null,
       audio: null,

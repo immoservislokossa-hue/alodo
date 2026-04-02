@@ -1,7 +1,21 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, Send, Image, X, Volume2, VolumeX, Loader2, ArrowLeft } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { 
+  Mic, 
+  MicOff, 
+  Send, 
+  Image as ImageIcon, 
+  X, 
+  Volume2, 
+  VolumeX, 
+  Loader2,
+  ChevronRight,
+  ExternalLink,
+  FileText,
+  Headphones
+} from "lucide-react";
 
 // Couleurs du branding Alɔdó
 const colors = {
@@ -22,8 +36,71 @@ const colors = {
   gray800: "#1F2937",
 };
 
+type Message = {
+  id: string;
+  type: "user" | "bot";
+  text: string;
+  steps?: string;
+  link?: string | null;
+  audio?: string | null;
+  image?: string | null;
+  timestamp: Date;
+};
+
+// ✅ FIX PROBLÈME 1: Validation simple et fiable
+const isValidAudio = (base64: string): boolean => {
+  return !!base64 && base64.length > 1000;
+};
+
+// ✅ FIX PROBLÈME 2: Extraction robuste du texte
+const extractTextFromResponse = (data: any): { text: string; steps: string; link: string | null } => {
+  if (typeof data === 'object' && data !== null) {
+    if (typeof data.text === 'string') {
+      return {
+        text: data.text,
+        steps: data.steps || "",
+        link: data.link || null,
+      };
+    }
+    const possibleText = data.text || data.message || data.response || data.content;
+    if (typeof possibleText === 'string') {
+      return {
+        text: possibleText,
+        steps: data.steps || "",
+        link: data.link || null,
+      };
+    }
+  }
+  
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return {
+          text: parsed.text || parsed.message || parsed.response || "Réponse reçue",
+          steps: parsed.steps || "",
+          link: parsed.link || null,
+        };
+      }
+    } catch {
+      return {
+        text: data,
+        steps: "",
+        link: null,
+      };
+    }
+  }
+  
+  return {
+    text: "Je cherche encore une réponse fiable. Réessaie dans quelques secondes.",
+    steps: "",
+    link: null,
+  };
+};
+
 export default function ChatbotPage() {
-  const [messages, setMessages] = useState<any[]>([]);
+  const searchParams = useSearchParams();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [recording, setRecording] = useState(false);
@@ -36,6 +113,18 @@ export default function ChatbotPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Récupérer la query param ?q=...
+  useEffect(() => {
+    const query = searchParams.get("q");
+    if (query && query.trim()) {
+      setInput(query);
+      // Envoyer automatiquement après un court délai
+      setTimeout(() => {
+        sendMessage({ skipUserMessage: true, preFilledQuestion: query });
+      }, 500);
+    }
+  }, [searchParams]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -44,8 +133,8 @@ export default function ChatbotPage() {
     scrollToBottom();
   }, [messages]);
 
-  const toBase64 = (file: Blob) =>
-    new Promise<string>((resolve, reject) => {
+  const toBase64 = (file: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
@@ -55,60 +144,95 @@ export default function ChatbotPage() {
       reader.readAsDataURL(file);
     });
 
+  // ✅ FIX PROBLÈME 2: Lecture audio robuste multi-format
   const playAudio = (base64: string) => {
-    if (isMuted) return;
-    
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    if (isMuted || !base64) return;
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      setIsPlaying(true);
+      
+      // Essayer différents formats
+      const src = `data:audio/mp3;base64,${base64}`;
+      const audio = new Audio(src);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsPlaying(false);
+        audioRef.current = null;
+      };
+
+      audio.onerror = () => {
+        // Fallback: essayer en WAV
+        const fallbackSrc = `data:audio/wav;base64,${base64}`;
+        const fallbackAudio = new Audio(fallbackSrc);
+        audioRef.current = fallbackAudio;
+        fallbackAudio.onended = () => {
+          setIsPlaying(false);
+          audioRef.current = null;
+        };
+        fallbackAudio.onerror = () => {
+          console.log("Audio error, fallback failed");
+          setIsPlaying(false);
+          audioRef.current = null;
+        };
+        fallbackAudio.play().catch((err) => {
+          console.log("Fallback play failed:", err);
+          setIsPlaying(false);
+        });
+      };
+
+      audio.play().catch((err) => {
+        console.log("Play failed, trying fallback:", err);
+        // Fallback immédiat
+        const fallbackSrc = `data:audio/wav;base64,${base64}`;
+        const fallbackAudio = new Audio(fallbackSrc);
+        audioRef.current = fallbackAudio;
+        fallbackAudio.onended = () => {
+          setIsPlaying(false);
+          audioRef.current = null;
+        };
+        fallbackAudio.onerror = () => {
+          setIsPlaying(false);
+          audioRef.current = null;
+        };
+        fallbackAudio.play().catch(() => setIsPlaying(false));
+      });
+    } catch (err) {
+      console.log("Audio crash:", err);
+      setIsPlaying(false);
     }
-    
-    setIsPlaying(true);
-    const audio = new Audio(`data:audio/wav;base64,${base64}`);
-    audioRef.current = audio;
-    
-    audio.onended = () => {
-      setIsPlaying(false);
-      audioRef.current = null;
-    };
-    
-    audio.onerror = () => {
-      setIsPlaying(false);
-      audioRef.current = null;
-    };
-    
-    audio.play().catch(() => {
-      setIsPlaying(false);
-    });
   };
 
-  // =========================
-  // ENREGISTREMENT VOCAL
-  // =========================
   const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
 
-    const mediaRecorder = new MediaRecorder(stream);
-    mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-    audioChunksRef.current = [];
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const base64 = await toBase64(audioBlob);
+        sendMessage({ audioBase64: base64, mimeType: "audio/webm" });
+        stream.getTracks().forEach(track => track.stop());
+      };
 
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunksRef.current.push(event.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, {
-        type: "audio/webm",
-      });
-
-      const base64 = await toBase64(audioBlob);
-
-      sendMessage({ audioBase64: base64, mimeType: "audio/webm" });
-    };
-
-    mediaRecorder.start();
-    setRecording(true);
+      mediaRecorder.start();
+      setRecording(true);
+    } catch (error) {
+      console.error("Erreur microphone:", error);
+    }
   };
 
   const stopRecording = () => {
@@ -116,67 +240,120 @@ export default function ChatbotPage() {
     setRecording(false);
   };
 
-  // =========================
-  // ENVOI MESSAGE
-  // =========================
   const sendMessage = async ({
     audioBase64 = null,
     mimeType = null,
-  }: any = {}) => {
-    if (!input && !image && !audioBase64) return;
+    skipUserMessage = false,
+    preFilledQuestion = null,
+  }: { 
+    audioBase64?: string | null; 
+    mimeType?: string | null;
+    skipUserMessage?: boolean;
+    preFilledQuestion?: string | null;
+  } = {}) => {
+    const messageText = preFilledQuestion || input;
+    if (!messageText && !image && !audioBase64) return;
 
     setLoading(true);
 
     let imageBase64 = null;
+    let imageMimeType = null;
     if (image) {
       imageBase64 = await toBase64(image);
+      imageMimeType = image.type;
     }
 
-    setMessages((prev) => [
-      ...prev,
-      {
+    // Message utilisateur (sauf si skip)
+    if (!skipUserMessage) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
         type: "user",
-        text: input || (audioBase64 ? "🎤 Message vocal envoyé" : ""),
+        text: messageText || (audioBase64 ? "🎤 Message vocal" : ""),
         image: image ? URL.createObjectURL(image) : null,
-      },
-      {
-        type: "bot",
-        text: "Un instant, je vérifie les informations...",
-      },
-    ]);
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+    }
 
-    const res = await fetch("/api/gemini/chat", {
-      method: "POST",
-      body: JSON.stringify({
-        message: input,
-        imageBase64,
-        imageMimeType: image?.type,
-        audioBase64,
-        audioMimeType: mimeType,
-      }),
-    });
+    const waitingMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      type: "bot",
+      text: "Un instant, je vérifie les informations...",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, waitingMessage]);
 
-    const data = await res.json();
+    try {
+      const response = await fetch("/api/gemini/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: messageText,
+          imageBase64,
+          imageMimeType,
+          audioBase64,
+          audioMimeType: mimeType,
+        }),
+      });
 
-    setMessages((prev) => {
-      const filtered = prev.filter((_, i) => i !== prev.length - 1);
-      return [
-        ...filtered,
-        {
-          type: "bot",
-          text: data.text,
-          steps: data.steps,
-          link: data.link,
-          audio: data.audio,
-        },
-      ];
-    });
+      const rawData = await response.json();
+      
+      // Debug audio
+      console.log("AUDIO LENGTH:", rawData.audio?.length);
+      
+      const extracted = extractTextFromResponse(rawData);
+      
+      // ✅ FIX PROBLÈME 3: Ne pas filtrer l'audio, laisser le frontend essayer
+      const hasValidAudio = rawData.audio ? isValidAudio(rawData.audio) : false;
+      
+      if (hasValidAudio) {
+        console.log("✅ Audio valide, longueur:", rawData.audio.length);
+      } else {
+        console.log("⚠️ Audio trop court ou absent");
+      }
 
-    if (data.audio) playAudio(data.audio);
+      setMessages((prev) => {
+        const filtered = prev.filter(m => m.id !== waitingMessage.id);
+        return [
+          ...filtered,
+          {
+            id: (Date.now() + 2).toString(),
+            type: "bot",
+            text: extracted.text,
+            steps: extracted.steps,
+            link: extracted.link,
+            audio: rawData.audio || null, // ✅ On garde l'audio même si court
+            timestamp: new Date(),
+          },
+        ];
+      });
 
-    setInput("");
-    setImage(null);
-    setLoading(false);
+      // ✅ Autoplay si audio dispo et non muet
+      if (rawData.audio && !isMuted) {
+        // Petit délai pour que le DOM soit prêt
+        setTimeout(() => {
+          playAudio(rawData.audio);
+        }, 100);
+      }
+    } catch (error) {
+      console.error("Erreur:", error);
+      setMessages((prev) => {
+        const filtered = prev.filter(m => m.id !== waitingMessage.id);
+        return [
+          ...filtered,
+          {
+            id: (Date.now() + 2).toString(),
+            type: "bot",
+            text: "Oups, je consulte encore les informations officielles pour mieux te répondre.",
+            timestamp: new Date(),
+          },
+        ];
+      });
+    } finally {
+      setLoading(false);
+      setInput("");
+      setImage(null);
+    }
   };
 
   const removeImage = () => {
@@ -192,6 +369,10 @@ export default function ChatbotPage() {
     }
   };
 
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  };
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -202,7 +383,7 @@ export default function ChatbotPage() {
       padding: "20px",
       fontFamily: "system-ui, -apple-system, sans-serif",
     }}>
-      {/* Barre tricolore béninoise */}
+      {/* Barre tricolore */}
       <div style={{
         position: "fixed",
         top: 0,
@@ -256,9 +437,7 @@ export default function ChatbotPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 color: colors.white,
-                transition: "all 0.2s",
               }}
-              aria-label={isMuted ? "Activer le son" : "Couper le son"}
             >
               {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
             </button>
@@ -291,7 +470,7 @@ export default function ChatbotPage() {
                 justifyContent: "center",
                 margin: "0 auto 16px",
               }}>
-                <Mic size={32} color={colors.deepBlue} />
+                <Headphones size={32} color={colors.deepBlue} />
               </div>
               <p style={{ fontSize: "14px", margin: 0 }}>
                 Posez votre question par texte, image ou vocal
@@ -301,31 +480,31 @@ export default function ChatbotPage() {
               </p>
             </div>
           ) : (
-            messages.map((m, i) => (
+            messages.map((msg) => (
               <div
-                key={i}
+                key={msg.id}
                 style={{
                   display: "flex",
-                  justifyContent: m.type === "user" ? "flex-end" : "flex-start",
+                  justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
                 }}
               >
                 <div
                   style={{
                     maxWidth: "80%",
-                    background: m.type === "user" ? colors.deepBlue : colors.white,
-                    color: m.type === "user" ? colors.white : colors.gray800,
+                    background: msg.type === "user" ? colors.deepBlue : colors.white,
+                    color: msg.type === "user" ? colors.white : colors.gray800,
                     padding: "14px 18px",
                     borderRadius: "20px",
-                    borderBottomRightRadius: m.type === "user" ? "4px" : "20px",
-                    borderBottomLeftRadius: m.type === "user" ? "20px" : "4px",
-                    boxShadow: m.type === "bot" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
-                    border: m.type === "bot" ? `1px solid ${colors.gray200}` : "none",
+                    borderBottomRightRadius: msg.type === "user" ? "4px" : "20px",
+                    borderBottomLeftRadius: msg.type === "user" ? "20px" : "4px",
+                    boxShadow: msg.type === "bot" ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
+                    border: msg.type === "bot" ? `1px solid ${colors.gray200}` : "none",
                   }}
                 >
-                  {m.image && (
+                  {msg.image && (
                     <div style={{ marginBottom: "8px" }}>
                       <img
-                        src={m.image}
+                        src={msg.image}
                         alt="Uploaded"
                         style={{
                           maxWidth: "200px",
@@ -335,46 +514,76 @@ export default function ChatbotPage() {
                       />
                     </div>
                   )}
-                  <div style={{ fontSize: "14px", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
-                    {m.text}
+
+                  {/* TEXTE PRINCIPAL - NOIR */}
+                  <div style={{
+                    fontSize: "14px",
+                    lineHeight: 1.5,
+                    whiteSpace: "pre-wrap",
+                    color: colors.gray800,
+                  }}>
+                    {msg.text}
                   </div>
 
-                  {m.steps && (
+                  {/* ÉTAPES - FOND JAUNE CLAIR, TEXTE GRIS */}
+                  {msg.steps && (
                     <div style={{
-                      marginTop: "10px",
-                      padding: "10px",
-                      background: colors.gray50,
+                      marginTop: "12px",
+                      padding: "12px",
+                      background: `${colors.beninYellow}15`,
                       borderRadius: "12px",
-                      fontSize: "13px",
+                      borderLeft: `3px solid ${colors.beninYellow}`,
                     }}>
-                      {m.steps}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                        <FileText size={12} color={colors.beninYellow} />
+                        <span style={{ fontSize: "11px", fontWeight: 600, color: colors.gray600 }}>
+                          Démarches à suivre
+                        </span>
+                      </div>
+                      <p style={{
+                        fontSize: "13px",
+                        margin: 0,
+                        lineHeight: 1.5,
+                        color: colors.gray700,
+                      }}>
+                        {msg.steps}
+                      </p>
                     </div>
                   )}
 
-                  {m.link && (
+                  {/* LIEN - VERT */}
+                  {msg.link && (
                     <a
-                      href={m.link}
+                      href={msg.link}
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        display: "inline-block",
-                        marginTop: "10px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginTop: "12px",
                         color: colors.beninGreen,
                         textDecoration: "none",
                         fontSize: "13px",
                         fontWeight: 500,
+                        padding: "6px 12px",
+                        background: `${colors.beninGreen}10`,
+                        borderRadius: "20px",
                       }}
                     >
-                      Voir le lien →
+                      <ExternalLink size={12} />
+                      Voir le lien officiel
+                      <ChevronRight size={12} />
                     </a>
                   )}
 
-                  {m.audio && (
+                  {/* AUDIO - bouton toujours présent si audio dispo */}
+                  {msg.audio && (
                     <button
-                      onClick={() => playAudio(m.audio)}
+                      onClick={() => playAudio(msg.audio!)}
                       disabled={isMuted}
                       style={{
-                        marginTop: "10px",
+                        marginTop: "12px",
                         background: `${colors.beninGreen}10`,
                         border: "none",
                         color: colors.beninGreen,
@@ -382,17 +591,26 @@ export default function ChatbotPage() {
                         borderRadius: "20px",
                         fontSize: "12px",
                         fontWeight: 500,
-                        cursor: "pointer",
+                        cursor: isMuted ? "not-allowed" : "pointer",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        transition: "all 0.2s",
                       }}
                     >
                       <Volume2 size={14} />
                       Écouter la réponse
                     </button>
                   )}
+
+                  <div style={{
+                    fontSize: "10px",
+                    opacity: 0.5,
+                    marginTop: "8px",
+                    textAlign: msg.type === "user" ? "right" : "left",
+                    color: colors.gray500,
+                  }}>
+                    {formatTime(msg.timestamp)}
+                  </div>
                 </div>
               </div>
             ))
@@ -446,7 +664,6 @@ export default function ChatbotPage() {
           borderTop: `1px solid ${colors.gray200}`,
           background: colors.white,
         }}>
-          {/* Image preview */}
           {image && (
             <div style={{
               display: "inline-flex",
@@ -457,7 +674,7 @@ export default function ChatbotPage() {
               borderRadius: "40px",
               marginBottom: "12px",
             }}>
-              <Image size={16} color={colors.gray500} />
+              <ImageIcon size={16} color={colors.gray500} />
               <span style={{ fontSize: "12px", color: colors.gray600 }}>{image.name}</span>
               <button
                 onClick={removeImage}
@@ -466,7 +683,6 @@ export default function ChatbotPage() {
                   border: "none",
                   cursor: "pointer",
                   padding: "2px",
-                  display: "flex",
                 }}
               >
                 <X size={14} color={colors.gray400} />
@@ -486,7 +702,6 @@ export default function ChatbotPage() {
                 justifyContent: "center",
                 cursor: "pointer",
                 border: `1px solid ${colors.gray200}`,
-                transition: "all 0.2s",
               }}
             >
               <input
@@ -495,7 +710,7 @@ export default function ChatbotPage() {
                 onChange={(e) => setImage(e.target.files?.[0] || null)}
                 style={{ display: "none" }}
               />
-              <Image size={18} color={colors.gray500} />
+              <ImageIcon size={18} color={colors.gray500} />
             </label>
 
             <input
@@ -517,13 +732,11 @@ export default function ChatbotPage() {
                 outline: "none",
                 fontFamily: "inherit",
                 background: colors.gray50,
-                transition: "all 0.2s",
               }}
               onFocus={(e) => e.currentTarget.style.borderColor = colors.deepBlue}
               onBlur={(e) => e.currentTarget.style.borderColor = colors.gray200}
             />
 
-            {/* BOUTON VOCAL */}
             {!recording ? (
               <button
                 onClick={startRecording}
@@ -538,7 +751,6 @@ export default function ChatbotPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  transition: "all 0.2s",
                 }}
               >
                 <Mic size={18} />
@@ -578,7 +790,6 @@ export default function ChatbotPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                transition: "all 0.2s",
               }}
             >
               {loading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={18} />}
