@@ -93,6 +93,10 @@ function readChoiceOption(option: ChoiceOption) {
   return option;
 }
 
+function getAllValues(options: readonly ChoiceOption[] | ChoiceOption[]): string[] {
+  return options.map((option) => readChoiceOption(option).value);
+}
+
 function toNullableNumber(value: string) {
   const clean = value.trim();
   if (!clean) return null;
@@ -695,6 +699,8 @@ export default function InstitutionNewPage() {
                 values={form.types_concernes}
                 color={colors.green}
                 onToggle={(value) => update("types_concernes", toggleArrayValue(form.types_concernes, value))}
+                onSelectAll={() => update("types_concernes", getAllValues(typeOptions))}
+                onClear={() => update("types_concernes", [])}
               />
 
               <ChoiceSection
@@ -703,6 +709,8 @@ export default function InstitutionNewPage() {
                 values={form.secteurs_concernes}
                 color={colors.blue}
                 onToggle={(value) => update("secteurs_concernes", toggleArrayValue(form.secteurs_concernes, value))}
+                onSelectAll={() => update("secteurs_concernes", getAllValues(sectorOptions))}
+                onClear={() => update("secteurs_concernes", [])}
               />
 
               <ChoiceSection
@@ -713,6 +721,8 @@ export default function InstitutionNewPage() {
                 onToggle={(value) =>
                   update("sous_secteurs_concernes", toggleArrayValue(form.sous_secteurs_concernes, value))
                 }
+                onSelectAll={() => update("sous_secteurs_concernes", getAllValues(subSectorOptions))}
+                onClear={() => update("sous_secteurs_concernes", [])}
               />
 
               <ChoiceSection
@@ -723,6 +733,8 @@ export default function InstitutionNewPage() {
                 onToggle={(value) =>
                   update("archetypes_concernes", toggleArrayValue(form.archetypes_concernes, value))
                 }
+                onSelectAll={() => update("archetypes_concernes", getAllValues(archetypeOptions))}
+                onClear={() => update("archetypes_concernes", [])}
               />
 
               <ChoiceSection
@@ -733,6 +745,8 @@ export default function InstitutionNewPage() {
                 onToggle={(value) =>
                   update("communes_concernees", toggleArrayValue(form.communes_concernees, value))
                 }
+                onSelectAll={() => update("communes_concernees", getAllValues(communeOptions))}
+                onClear={() => update("communes_concernees", [])}
               />
 
               <ChoiceSection
@@ -746,6 +760,8 @@ export default function InstitutionNewPage() {
                     toggleArrayValue(form.besoins_financement_concernes, value)
                   )
                 }
+                onSelectAll={() => update("besoins_financement_concernes", getAllValues(needOptions))}
+                onClear={() => update("besoins_financement_concernes", [])}
               />
 
               <ChoiceSection
@@ -754,6 +770,8 @@ export default function InstitutionNewPage() {
                 values={form.documents_requis}
                 color="#8a5f74"
                 onToggle={(value) => update("documents_requis", toggleArrayValue(form.documents_requis, value))}
+                onSelectAll={() => update("documents_requis", getAllValues(documentOptions))}
+                onClear={() => update("documents_requis", [])}
               />
 
               <div style={doubleGridStyle}>
@@ -921,16 +939,66 @@ function ChoiceSection({
   values,
   color,
   onToggle,
+  onSelectAll,
+  onClear,
 }: {
   label: string;
   options: readonly ChoiceOption[] | ChoiceOption[];
   values: string[];
   color: string;
   onToggle: (value: string) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
 }) {
+  const allSelected = values.length === options.length && options.length > 0;
+  
   return (
     <div style={sectionStyle}>
-      <label style={labelStyle}>{label}</label>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 10,
+      }}>
+        <label style={labelStyle}>{label}</label>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: colors.muted }}>
+            {values.length}/{options.length}
+          </span>
+          <button
+            type="button"
+            onClick={onSelectAll}
+            style={{
+              ...buttonStyle,
+              background: allSelected ? color : colors.line,
+              color: allSelected ? colors.white : colors.ink,
+              minHeight: 32,
+              padding: "0 12px",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {allSelected ? "Tout deselectionner" : "Tout selectionner"}
+          </button>
+          {values.length > 0 && (
+            <button
+              type="button"
+              onClick={onClear}
+              style={{
+                ...buttonStyle,
+                background: colors.line,
+                color: colors.ink,
+                minHeight: 32,
+                padding: "0 12px",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              Reinitialiser
+            </button>
+          )}
+        </div>
+      </div>
       <div style={chipsGridStyle}>
         {options.map((option) => {
           const normalized = readChoiceOption(option);
