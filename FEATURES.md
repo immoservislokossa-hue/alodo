@@ -125,13 +125,13 @@ L'intégration avec le service de paiement Moneroo est en place. Les institution
 
 ## Intelligence artificielle (Gemini)
 
-**État : Fonctionnel, en cours d'amélioration**
+**État : Terminé**
 
 Deux fonctions IA sont actives sur le site :
-1. L'analyse de CV dans la section Formalisation (score, conseils, points forts et points faibles)
+1. L'assistant administratif Bénin (démarches, documents officiels) dans la section Formalisation
 2. La génération de résumés multilingues pour les offres des institutions
 
-La première est en cours de modification. La deuxième est stable et intègre une protection contre les abus (limite de 5 requêtes par minute).
+Les deux sont stables. La deuxième intègre une protection contre les abus (limite de 5 requêtes par minute).
 
 ---
 
