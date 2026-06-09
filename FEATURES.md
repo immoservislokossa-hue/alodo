@@ -30,13 +30,13 @@ Une fois connecté, l'utilisateur accède à son espace personnel. Il voit son n
 
 ---
 
-## Assistant CV — Formalisation
+## Assistant administratif Bénin — Formalisation
 
-**État : En cours de modification**
+**État : Terminé**
 
-Cette fonctionnalité permet à l'utilisateur de construire son CV en discutant avec une assistante IA appelée Angela. Le formulaire se déroule en 12 étapes (objectif, identité, expériences, formations, compétences, etc.). À la fin, l'IA analyse le CV, donne un score sur 20 et propose des conseils personnalisés.
+Cette page est un chatbot d'assistance administrative pour les démarches au Bénin. L'utilisateur pose sa question (par texte, image ou message vocal) et l'IA répond avec une explication claire et les étapes à suivre. Des suggestions rapides sont proposées au démarrage : carte d'identité, passeport, acte de naissance, CNSS. L'assistant peut aussi renvoyer vers un lien officiel si disponible.
 
-La fonctionnalité fonctionne dans l'ensemble, mais des modifications récentes ont été apportées à la connexion avec l'IA. Des tests sont en cours pour s'assurer que tout fonctionne correctement.
+L'API associée utilise Gemini 2.5 Flash avec un système de retry automatique en cas d'erreur. Elle répond en JSON structuré avec le texte de réponse, les démarches à suivre, et un lien éventuel.
 
 ---
 
