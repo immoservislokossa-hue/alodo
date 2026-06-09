@@ -147,13 +147,14 @@ Le site peut être installé comme une application sur smartphone. Un bouton d'i
 
 | Ce qui est terminé | Ce qui est en cours | Ce qui reste à faire |
 |--------------------|---------------------|----------------------|
-| Landing page | Assistant CV (Formalisation) | Dashboard Vendeur |
-| Inscription | Intégration IA Gemini | Dashboard Prestataire |
+| Landing page | | Dashboard Vendeur |
+| Inscription | | Dashboard Prestataire |
 | Hub profil | | Mode Simple |
 | Démo USSD | | |
 | Opportunités | | |
 | Portefeuille | | |
 | Tendances marché | | |
 | Espace Institution | | |
+| Assistant admin Bénin | | |
 | Paiements Moneroo | | |
 | PWA (installation) | | |
